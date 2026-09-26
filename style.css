@@ -87,6 +87,23 @@ button:disabled { opacity: .45; }
   display: grid; place-items: center;
 }
 
+/* すうじの せん */
+.plus { font-size: 44px; font-weight: bold; }
+.nl { position: relative; width: 100%; max-width: 980px; display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); padding-top: 90px; }
+.rail { position: absolute; left: calc(50% / var(--n)); right: calc(50% / var(--n)); top: 118px; height: 8px; border-radius: 4px; background: var(--ink); }
+.tick, .tick.choice { font-size: 16px; aspect-ratio: auto; max-height: none; font-weight: normal; min-width: 0; background: none; box-shadow: none; border-radius: 12px; height: 120px; padding: 0; display: flex; flex-direction: column; align-items: center; position: relative; }
+.tick:active { transform: none; box-shadow: none; background: rgba(0,0,0,.05); }
+.tick:disabled { opacity: 1; }
+.tick .mark { width: 6px; height: 36px; background: var(--ink); border-radius: 3px; margin-top: 10px; }
+.tick .lab { font-size: clamp(18px, 3.2vw, 34px); font-weight: bold; margin-top: 6px; min-height: 1.2em; }
+.tick.blank .lab { color: #e8590c; }
+.tick.ok .mark, .tick.mark-on .mark { background: var(--ok); width: 12px; }
+.tick.ok .lab, .tick.mark-on .lab { color: var(--ok); }
+.tick.ng .mark { background: var(--ng); }
+.rider { position: absolute; top: 20px; left: calc((var(--v) + .5) * 100% / var(--n)); transform: translateX(-50%); font-size: 60px; line-height: 1; transition: left .35s ease-out; }
+.rider.hop { animation: hop .4s; }
+@keyframes hop { 50% { transform: translate(-50%, -26px); } }
+
 /* ごほうび */
 .stamp { font-size: 160px; }
 .reward h2, .end h2 { font-size: 44px; margin: 8px 0; }

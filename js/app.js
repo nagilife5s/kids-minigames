@@ -3,8 +3,9 @@ import { speak, sfx, unlock, jaVoices, setVoice, currentVoice } from './sound.js
 import { ROBOTS, STAMPS_PER_ROBOT, PROFILE_ICONS, QUESTIONS_PER_ROUND } from './data.js';
 import hiragana from './games/hiragana.js';
 import count from './games/count.js';
+import numberline from './games/numberline.js';
 
-const GAMES = [hiragana, count];
+const GAMES = [hiragana, count, numberline];
 
 const app = document.getElementById('app');
 let data = load();

@@ -1,9 +1,9 @@
 // オフライン用の保存。ファイルを増やしたら FILES に足して VERSION を上げる
-const VERSION = 'v3';
+const VERSION = 'v4';
 const FILES = [
   './', 'index.html', 'style.css', 'manifest.webmanifest',
   'js/app.js', 'js/store.js', 'js/sound.js', 'js/data.js',
-  'js/games/hiragana.js', 'js/games/count.js',
+  'js/games/hiragana.js', 'js/games/count.js', 'js/games/numberline.js',
   'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',
 ];
 
