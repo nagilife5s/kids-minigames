@@ -123,8 +123,8 @@ async function playRound(game) {
       q.render(app.querySelector('.stage'), {
         speak,
         tap: sfx.tap,
-        correct(el) { sfx.ok(); el.classList.add('ok'); lockChoices(); },
-        wrong(el) { sfx.ng(); el.classList.add('ng'); el.disabled = true; },
+        correct(el) { sfx.ok(); el.classList.add('ok'); lockChoices(); showMark(true); },
+        wrong(el) { sfx.ng(); el.classList.add('ng'); el.disabled = true; showMark(false); },
         done: (ok) => setTimeout(() => resolve(ok), 500),
       });
     });
@@ -154,6 +154,17 @@ async function playRound(game) {
   }
   persist();
   screenReward(game, robot);
+}
+
+// まるの ときは おおきな ⭕ と きらきら、ちがう ときは やさしく「おしい！」
+function showMark(ok) {
+  const m = document.createElement('div');
+  m.className = 'mark-fx ' + (ok ? 'is-ok' : 'is-ng');
+  m.innerHTML = ok
+    ? '<span class="ring"></span>' + Array.from({ length: 10 }, (_, i) => `<span class="spark" style="--a:${i * 36}deg">✦</span>`).join('')
+    : `<span class="oshii">🤔${noText() ? '' : '<b>おしい！</b>'}</span>`;
+  document.body.appendChild(m);
+  setTimeout(() => m.remove(), ok ? 900 : 800);
 }
 
 function lockChoices() {

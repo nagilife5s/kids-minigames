@@ -1,5 +1,5 @@
 // オフライン用の保存。ファイルを増やしたら FILES に足して VERSION を上げる
-const VERSION = 'v4';
+const VERSION = 'v5';
 const FILES = [
   './', 'index.html', 'style.css', 'manifest.webmanifest',
   'js/app.js', 'js/store.js', 'js/sound.js', 'js/data.js',

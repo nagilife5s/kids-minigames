@@ -147,5 +147,16 @@ button:disabled { opacity: .45; }
 .icons input:checked + span { background: var(--accent); }
 .import { display: inline-block; background: var(--card); box-shadow: 0 6px 0 rgba(0,0,0,.12); margin-left: 8px; cursor: pointer; }
 
+/* まる・おしい の えんしゅつ */
+.mark-fx { position: fixed; inset: 0; display: grid; place-items: center; pointer-events: none; z-index: 50; }
+.mark-fx > * { grid-area: 1 / 1; }
+.mark-fx .ring { width: 300px; height: 300px; border-radius: 50%; border: 36px solid #ff6b6b; animation: ring .9s ease-out forwards; }
+.mark-fx .spark { font-size: 44px; color: #fcc419; animation: spark .9s ease-out forwards; }
+.mark-fx .oshii { background: rgba(255,255,255,.92); border-radius: 40px; padding: 20px 40px; box-shadow: 0 8px 24px rgba(0,0,0,.12); font-size: 90px; display: flex; flex-direction: column; align-items: center; animation: oshii .8s ease-out forwards; }
+.mark-fx .oshii b { font-size: 48px; color: #495057; }
+@keyframes ring { 0% { transform: scale(.2); opacity: 0; } 30% { transform: scale(1.1); opacity: .95; } 70% { transform: scale(1); opacity: .95; } 100% { transform: scale(1.05); opacity: 0; } }
+@keyframes spark { 0% { transform: rotate(var(--a)) translateY(0) scale(.3); opacity: 0; } 30% { opacity: 1; } 100% { transform: rotate(var(--a)) translateY(-230px) scale(1); opacity: 0; } }
+@keyframes oshii { 0% { transform: scale(.5); opacity: 0; } 25% { transform: scale(1.1); opacity: 1; } 40% { transform: rotate(-8deg); } 55% { transform: rotate(8deg); } 70% { transform: rotate(0); opacity: 1; } 100% { opacity: 0; } }
+
 @keyframes pop { 0% { transform: scale(.6); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
 @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
