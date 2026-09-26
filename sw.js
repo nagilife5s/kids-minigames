@@ -1,5 +1,5 @@
-// ファイルを変えたら VERSION を上げる（iPad側のキャッシュが更新される）
-const VERSION = 'v2';
+// オフライン用の保存。ファイルを増やしたら FILES に足して VERSION を上げる
+const VERSION = 'v3';
 const FILES = [
   './', 'index.html', 'style.css', 'manifest.webmanifest',
   'js/app.js', 'js/store.js', 'js/sound.js', 'js/data.js',
@@ -21,5 +21,13 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
-  e.respondWith(caches.match(e.request, { ignoreSearch: true }).then((hit) => hit || fetch(e.request)));
+  // ネットにつながるときは最新を取りに行き、つながらないときだけ保存分を使う
+  e.respondWith(
+    fetch(e.request, { cache: 'no-cache' })
+      .then((res) => {
+        if (res.ok) { const copy = res.clone(); caches.open(VERSION).then((c) => c.put(e.request, copy)); }
+        return res;
+      })
+      .catch(() => caches.match(e.request, { ignoreSearch: true }))
+  );
 });
