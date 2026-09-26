@@ -1,5 +1,5 @@
 // ファイルを変えたら VERSION を上げる（iPad側のキャッシュが更新される）
-const VERSION = 'v1';
+const VERSION = 'v2';
 const FILES = [
   './', 'index.html', 'style.css', 'manifest.webmanifest',
   'js/app.js', 'js/store.js', 'js/sound.js', 'js/data.js',

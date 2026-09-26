@@ -1,5 +1,5 @@
 import { load, save, newProfile, today, exportJson, importJson } from './store.js';
-import { speak, sfx, unlock } from './sound.js';
+import { speak, sfx, unlock, jaVoices, setVoice, currentVoice } from './sound.js';
 import { ROBOTS, STAMPS_PER_ROBOT, PROFILE_ICONS, QUESTIONS_PER_ROUND } from './data.js';
 import hiragana from './games/hiragana.js';
 import count from './games/count.js';
@@ -309,6 +309,12 @@ function screenParent(back) {
         <select class="limit">${[0, 10, 15, 20, 30, 45, 60].map((m) => `<option value="${m}" ${m === data.settings.limitMin ? 'selected' : ''}>${m ? m + 'ふん' : 'せいげん なし'}</option>`).join('')}</select>
       </section>
       <section>
+        <h3>こえ</h3>
+        <p class="muted">声が機械っぽいときは、iPadの「設定 → アクセシビリティ → 読み上げコンテンツ → 声 → 日本語」で「プレミアム」や「拡張」の声をダウンロードすると、ここに出てきます。</p>
+        <select class="voice">${jaVoices().map((v) => `<option value="${esc(v.voiceURI)}" ${v === currentVoice() ? 'selected' : ''}>${esc(v.name)}</option>`).join('') || '<option>（日本語の声が見つかりません）</option>'}</select>
+        <button class="trysay">▶ ためしに きく</button>
+      </section>
+      <section>
         <h3>バックアップ</h3>
         <p class="muted">ホーム画面のアイコンを消すと記録も消えます。ときどき書き出しておいてください。</p>
         <button class="export">かきだす</button>
@@ -347,6 +353,8 @@ function screenParent(back) {
     persist(); rerender();
   };
   app.querySelector('.limit').onchange = (e) => { data.settings.limitMin = Number(e.target.value); persist(); };
+  app.querySelector('.voice').onchange = (e) => { setVoice(e.target.value); speak('こんにちは！ いっしょに あそぼう'); };
+  app.querySelector('.trysay').onclick = () => speak('こんにちは！ いっしょに あそぼう');
   app.querySelector('.export').onclick = async () => {
     const text = exportJson(data);
     const file = new File([text], `kids-minigames-${today()}.json`, { type: 'application/json' });

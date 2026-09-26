@@ -2,10 +2,25 @@
 let voice = null;
 let ctx = null;
 
+const VOICE_KEY = 'kids-minigames.voice';
+
+export const jaVoices = () =>
+  ('speechSynthesis' in window ? speechSynthesis.getVoices() : []).filter((v) => v.lang.startsWith('ja'));
+
+// 親画面で選んだ声 → 高品質版（プレミアム／拡張）→ そのほか の順で選ぶ
 function pickVoice() {
-  const vs = speechSynthesis.getVoices().filter((v) => v.lang.startsWith('ja'));
-  voice = vs.find((v) => /kyoko|o-ren|otoya/i.test(v.name)) || vs[0] || null;
+  const vs = jaVoices();
+  let saved = null;
+  try { saved = localStorage.getItem(VOICE_KEY); } catch { /* 無視 */ }
+  const score = (v) => (/premium|プレミアム/i.test(v.name) ? 3 : /enhanced|拡張/i.test(v.name) ? 2 : /kyoko|o-ren|otoya/i.test(v.name) ? 1 : 0);
+  voice = vs.find((v) => v.voiceURI === saved) || [...vs].sort((a, b) => score(b) - score(a))[0] || null;
 }
+
+export function setVoice(uri) {
+  try { localStorage.setItem(VOICE_KEY, uri); } catch { /* 無視 */ }
+  pickVoice();
+}
+export const currentVoice = () => voice;
 if ('speechSynthesis' in window) {
   pickVoice();
   speechSynthesis.addEventListener?.('voiceschanged', pickVoice);
@@ -21,13 +36,14 @@ export function unlock() {
   if ('speechSynthesis' in window && !voice) pickVoice();
 }
 
-export function speak(text, { rate = 0.9, cancel = true } = {}) {
+export function speak(text, { rate = 0.85, pitch = 1.1, cancel = true } = {}) {
   if (!('speechSynthesis' in window)) return Promise.resolve();
   if (cancel) speechSynthesis.cancel();
   return new Promise((resolve) => {
     const u = new SpeechSynthesisUtterance(text);
     u.lang = 'ja-JP';
     u.rate = rate;
+    u.pitch = pitch;
     if (voice) u.voice = voice;
     u.onend = u.onerror = () => resolve();
     speechSynthesis.speak(u);
