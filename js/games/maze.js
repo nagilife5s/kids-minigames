@@ -27,7 +27,7 @@ const pick = (a) => a[Math.floor(Math.random() * a.length)];
 const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
 // あなほり法で めいろ → いくつか かべを こわして いきどまりを へらす
-function generate(W, H, braid) {
+function generate(W, H, braid, keep = () => false) {
   const link = new Set(); // "x,y|nx,ny" どうしが つながって いる
   const key = (a, b, c, d) => (a < c || (a === c && b < d) ? `${a},${b}|${c},${d}` : `${c},${d}|${a},${b}`);
   const seen = Array.from({ length: H }, () => Array(W).fill(false));
@@ -48,7 +48,7 @@ function generate(W, H, braid) {
   const degree = (x, y) => DIRS.filter(([dx, dy]) => inside(x + dx, y + dy) && open(x, y, x + dx, y + dy)).length;
   for (let y = 0; y < H; y++) {
     for (let x = 0; x < W; x++) {
-      if (degree(x, y) !== 1 || Math.random() >= braid) continue;
+      if (keep(x, y) || degree(x, y) !== 1 || Math.random() >= braid) continue;
       const opts = DIRS.map(([dx, dy]) => [x + dx, y + dy]).filter(([nx, ny]) => inside(nx, ny) && !open(x, y, nx, ny));
       if (opts.length) { const [nx, ny] = pick(opts); link.add(key(x, y, nx, ny)); }
     }
@@ -87,25 +87,38 @@ export default {
     const portrait = innerHeight > innerWidth;
     const W = portrait ? L.rows : L.cols;
     const H = portrait ? L.cols : L.rows;
-    const m = generate(W, H, L.braid);
+    // ゴールがわの はしは いきどまりを のこす（みちの おわりに ゴールを おくため）
+    const onGoalEdge = (x, y) => (portrait ? y === H - 1 : x === W - 1);
+    const m = generate(W, H, L.braid, onGoalEdge);
     const trip = pick(TRIPS);
 
-    // スタートは ひだりうえ、ゴールは はんたいがわの はし（よこなら みぎの れつ、たてなら したの ぎょう）の なかで いちばん とおい マス
+    // スタートは ひだりうえ。ゴールは はんたいがわの はしの「みちの おわり（いきどまり）」の うち、いちばん とおい マス
     const dist = distances(m, W, H, 0, 0);
-    let gx = W - 1, gy = H - 1;
-    for (let y = 0; y < H; y++) {
-      for (let x = 0; x < W; x++) {
-        const edge = portrait ? y === H - 1 : x === W - 1;
-        if (edge && dist[y][x] > dist[gy][gx]) { gx = x; gy = y; }
+    let gx = -1, gy = -1;
+    for (const deadEndOnly of [true, false]) {
+      for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+          if (!onGoalEdge(x, y) || (deadEndOnly && m.degree(x, y) !== 1)) continue;
+          if (gx < 0 || dist[y][x] > dist[gy][gx]) { gx = x; gy = y; }
+        }
       }
+      if (gx >= 0) break;
     }
     const best = dist[gy][gx];
 
-    // ほしは いきどまり を ゆうせん
-    const free = [];
-    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (!(x === 0 && y === 0) && !(x === gx && y === gy)) free.push([x, y, m.degree(x, y) === 1 ? 0 : 1, Math.random()]);
-    free.sort((a, b) => a[2] - b[2] || a[3] - b[3]);
-    const stars = free.slice(0, L.stars).map(([x, y]) => `${x},${y}`);
+    // ほしは ゴールまでの みちの うえに ならべる（もどらずに ひろえる）
+    const path = [[gx, gy]];
+    while (path[0][0] || path[0][1]) {
+      const [x, y] = path[0];
+      const back = DIRS.map(([dx, dy]) => [x + dx, y + dy])
+        .find(([nx, ny]) => m.inside(nx, ny) && m.open(x, y, nx, ny) && dist[ny][nx] === dist[y][x] - 1);
+      path.unshift(back);
+    }
+    const stars = [];
+    for (let i = 1; i <= L.stars; i++) {
+      const at = path[Math.round((i * (path.length - 1)) / (L.stars + 1))];
+      if (at && !(at[0] === gx && at[1] === gy) && (at[0] || at[1])) stars.push(`${at[0]},${at[1]}`);
+    }
 
     return {
       key: `${L.cols}x${L.rows}`,
