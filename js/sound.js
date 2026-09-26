@@ -1,0 +1,58 @@
+// 読み上げ（Web Speech API）と効果音（WebAudio で合成。音源ファイル不要）
+let voice = null;
+let ctx = null;
+
+function pickVoice() {
+  const vs = speechSynthesis.getVoices().filter((v) => v.lang.startsWith('ja'));
+  voice = vs.find((v) => /kyoko|o-ren|otoya/i.test(v.name)) || vs[0] || null;
+}
+if ('speechSynthesis' in window) {
+  pickVoice();
+  speechSynthesis.addEventListener?.('voiceschanged', pickVoice);
+}
+
+// iPad はタップの中で一度鳴らさないと音が出ないので、最初のタップで起こす
+export function unlock() {
+  if (!ctx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (AC) ctx = new AC();
+  }
+  ctx?.resume?.();
+  if ('speechSynthesis' in window && !voice) pickVoice();
+}
+
+export function speak(text, { rate = 0.9, cancel = true } = {}) {
+  if (!('speechSynthesis' in window)) return Promise.resolve();
+  if (cancel) speechSynthesis.cancel();
+  return new Promise((resolve) => {
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'ja-JP';
+    u.rate = rate;
+    if (voice) u.voice = voice;
+    u.onend = u.onerror = () => resolve();
+    speechSynthesis.speak(u);
+    setTimeout(resolve, 4000 + text.length * 250); // onend が来ない端末への保険
+  });
+}
+
+function tone(freq, start, dur, type = 'sine', gain = 0.18) {
+  if (!ctx) return;
+  const o = ctx.createOscillator();
+  const g = ctx.createGain();
+  o.type = type;
+  o.frequency.value = freq;
+  const t = ctx.currentTime + start;
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(gain, t + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g).connect(ctx.destination);
+  o.start(t);
+  o.stop(t + dur + 0.05);
+}
+
+export const sfx = {
+  tap: () => tone(660, 0, 0.08, 'triangle', 0.1),
+  ok: () => { tone(784, 0, 0.15); tone(1047, 0.12, 0.3); },
+  ng: () => { tone(330, 0, 0.18, 'triangle'); tone(262, 0.15, 0.25, 'triangle'); },
+  fanfare: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.13, 0.35, 'triangle')),
+};
