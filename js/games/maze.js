@@ -1,53 +1,75 @@
-// めいろ: のりものを ゆびで なぞって ゴールまで はこぶ
-import { VEHICLES } from '../data.js';
+// めいろで ごーる: のりものを ゆびで なぞって、みちを とおって いきさきへ
+// みちの とちゅうの ほしも ひろえる
 
-const SIZES = [3, 4, 5, 6, 7, 8];
+// のりものと いきさき
+const TRIPS = [
+  { rider: '🚒', goal: '🔥', name: 'しょうぼうしゃ', place: 'かじの ばしょ' },
+  { rider: '🚑', goal: '🏥', name: 'きゅうきゅうしゃ', place: 'びょういん' },
+  { rider: '🚓', goal: '🏢', name: 'ぱとかー', place: 'けいさつしょ' },
+  { rider: '🚌', goal: '🚏', name: 'ばす', place: 'ばすてい' },
+  { rider: '🚚', goal: '📦', name: 'とらっく', place: 'にもつの ところ' },
+  { rider: '🚜', goal: '🌾', name: 'とらくたー', place: 'はたけ' },
+  { rider: '🚗', goal: '🏠', name: 'くるま', place: 'おうち' },
+];
 
-// あなほり法で めいろを つくる（wallR: 右のかべ, wallB: 下のかべ）
-function generate(n) {
-  const wallR = Array.from({ length: n }, () => Array(n).fill(true));
-  const wallB = Array.from({ length: n }, () => Array(n).fill(true));
-  const seen = Array.from({ length: n }, () => Array(n).fill(false));
+// cols×rows（よこながの iPad むけ）。braid は いきどまりを へらす わりあい（ちいさい こ むけ）
+const LEVELS = [
+  { cols: 4, rows: 3, braid: 0.6, stars: 1 },
+  { cols: 5, rows: 3, braid: 0.4, stars: 2 },
+  { cols: 6, rows: 4, braid: 0.3, stars: 2 },
+  { cols: 7, rows: 5, braid: 0.15, stars: 3 },
+  { cols: 9, rows: 6, braid: 0.05, stars: 3 },
+  { cols: 11, rows: 7, braid: 0, stars: 3 },
+  { cols: 13, rows: 8, braid: 0, stars: 3 },
+];
+
+const pick = (a) => a[Math.floor(Math.random() * a.length)];
+const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+
+// あなほり法で めいろ → いくつか かべを こわして いきどまりを へらす
+function generate(W, H, braid) {
+  const link = new Set(); // "x,y|nx,ny" どうしが つながって いる
+  const key = (a, b, c, d) => (a < c || (a === c && b < d) ? `${a},${b}|${c},${d}` : `${c},${d}|${a},${b}`);
+  const seen = Array.from({ length: H }, () => Array(W).fill(false));
   const stack = [[0, 0]];
   seen[0][0] = true;
   while (stack.length) {
     const [x, y] = stack[stack.length - 1];
-    const next = [[1, 0], [-1, 0], [0, 1], [0, -1]]
-      .map(([dx, dy]) => [x + dx, y + dy])
-      .filter(([nx, ny]) => nx >= 0 && ny >= 0 && nx < n && ny < n && !seen[ny][nx]);
+    const next = DIRS.map(([dx, dy]) => [x + dx, y + dy])
+      .filter(([nx, ny]) => nx >= 0 && ny >= 0 && nx < W && ny < H && !seen[ny][nx]);
     if (!next.length) { stack.pop(); continue; }
-    const [nx, ny] = next[Math.floor(Math.random() * next.length)];
-    if (nx > x) wallR[y][x] = false;
-    if (nx < x) wallR[y][nx] = false;
-    if (ny > y) wallB[y][x] = false;
-    if (ny < y) wallB[ny][x] = false;
+    const [nx, ny] = pick(next);
+    link.add(key(x, y, nx, ny));
     seen[ny][nx] = true;
     stack.push([nx, ny]);
   }
-  return { wallR, wallB };
+  const open = (x, y, nx, ny) => link.has(key(x, y, nx, ny));
+  const inside = (x, y) => x >= 0 && y >= 0 && x < W && y < H;
+  const degree = (x, y) => DIRS.filter(([dx, dy]) => inside(x + dx, y + dy) && open(x, y, x + dx, y + dy)).length;
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      if (degree(x, y) !== 1 || Math.random() >= braid) continue;
+      const opts = DIRS.map(([dx, dy]) => [x + dx, y + dy]).filter(([nx, ny]) => inside(nx, ny) && !open(x, y, nx, ny));
+      if (opts.length) { const [nx, ny] = pick(opts); link.add(key(x, y, nx, ny)); }
+    }
+  }
+  return { open, inside, degree, link };
 }
 
-function open(m, x, y, nx, ny) {
-  if (nx === x + 1 && ny === y) return !m.wallR[y][x];
-  if (nx === x - 1 && ny === y) return !m.wallR[y][nx];
-  if (ny === y + 1 && nx === x) return !m.wallB[y][x];
-  if (ny === y - 1 && nx === x) return !m.wallB[ny][x];
-  return false;
-}
-
-function shortest(m, n) {
-  const dist = Array.from({ length: n }, () => Array(n).fill(-1));
-  const q = [[0, 0]];
-  dist[0][0] = 0;
+function distances(m, W, H, sx, sy) {
+  const dist = Array.from({ length: H }, () => Array(W).fill(-1));
+  const q = [[sx, sy]];
+  dist[sy][sx] = 0;
   while (q.length) {
     const [x, y] = q.shift();
-    for (const [nx, ny] of [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]]) {
-      if (nx < 0 || ny < 0 || nx >= n || ny >= n || dist[ny][nx] >= 0 || !open(m, x, y, nx, ny)) continue;
+    for (const [dx, dy] of DIRS) {
+      const nx = x + dx, ny = y + dy;
+      if (!m.inside(nx, ny) || dist[ny][nx] >= 0 || !m.open(x, y, nx, ny)) continue;
       dist[ny][nx] = dist[y][x] + 1;
       q.push([nx, ny]);
     }
   }
-  return dist[n - 1][n - 1];
+  return dist;
 }
 
 export default {
@@ -55,64 +77,118 @@ export default {
   title: 'めいろで ごーる',
   icon: '🏁',
   color: '#ffc078',
-  howto: 'のりものを ゆびで なぞって、ごーるの はたまで つれていってね',
-  levels: SIZES.length,
+  howto: 'のりものを ゆびで なぞって、みちを とおって いきさきまで つれていってね。ほしも ひろえるかな？',
+  levels: LEVELS.length,
   startLevel: (age) => (age <= 3 ? 0 : age === 4 ? 1 : age === 5 ? 2 : age === 6 ? 3 : 4),
 
   question(level) {
-    const n = SIZES[level];
-    const m = generate(n);
-    const best = shortest(m, n);
-    const rider = VEHICLES[Math.floor(Math.random() * VEHICLES.length)];
+    const L = LEVELS[level];
+    // たてながで もって いたら たて・よこを いれかえる
+    const portrait = innerHeight > innerWidth;
+    const W = portrait ? L.rows : L.cols;
+    const H = portrait ? L.cols : L.rows;
+    const m = generate(W, H, L.braid);
+    const trip = pick(TRIPS);
+
+    // スタートは ひだりうえ、ゴールは はんたいがわの はし（よこなら みぎの れつ、たてなら したの ぎょう）の なかで いちばん とおい マス
+    const dist = distances(m, W, H, 0, 0);
+    let gx = W - 1, gy = H - 1;
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const edge = portrait ? y === H - 1 : x === W - 1;
+        if (edge && dist[y][x] > dist[gy][gx]) { gx = x; gy = y; }
+      }
+    }
+    const best = dist[gy][gx];
+
+    // ほしは いきどまり を ゆうせん
+    const free = [];
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (!(x === 0 && y === 0) && !(x === gx && y === gy)) free.push([x, y, m.degree(x, y) === 1 ? 0 : 1, Math.random()]);
+    free.sort((a, b) => a[2] - b[2] || a[3] - b[3]);
+    const stars = free.slice(0, L.stars).map(([x, y]) => `${x},${y}`);
 
     return {
-      key: `${n}x${n}`,
+      key: `${L.cols}x${L.rows}`,
       render(root, api) {
-        const cells = [];
-        for (let y = 0; y < n; y++) {
-          for (let x = 0; x < n; x++) {
-            const cls = [m.wallR[y][x] ? 'wr' : '', m.wallB[y][x] ? 'wb' : ''].join(' ');
-            cells.push(`<div class="cell ${cls}" data-x="${x}" data-y="${y}">${x === n - 1 && y === n - 1 ? '<span class="goal">🏁</span>' : ''}</div>`);
-          }
-        }
+        const S = 100; // 1マスの おおきさ（SVG の たんい）
+        const c = (v) => v * S + S / 2;
+        const roads = [...m.link].map((k) => {
+          const [[x1, y1], [x2, y2]] = k.split('|').map((p) => p.split(',').map(Number));
+          return `M${c(x1)} ${c(y1)}L${c(x2)} ${c(y2)}`;
+        }).join('');
+        const trees = [];
+        for (let y = 1; y < H; y++) for (let x = 1; x < W; x++) if (Math.random() < 0.3) trees.push(`<text x="${x * S}" y="${y * S + 9}" class="tree">${pick(['🌳', '🌲', '🌷', '🌼'])}</text>`);
+
         root.innerHTML = `
-          <button class="replay" aria-label="もういちど きく">🔊</button>
-          <div class="maze" style="--n:${n}">${cells.join('')}<div class="rider">${rider}</div></div>`;
-        const ask = () => api.speak('ごーるまで いけるかな？');
+          <div class="maze-top">
+            <button class="replay" aria-label="もういちど きく">🔊</button>
+            <span class="star-count">⭐ <b>0</b> / ${stars.length}</span>
+          </div>
+          <div class="maze" style="--w:${W};--h:${H}">
+            <svg viewBox="0 0 ${W * S} ${H * S}" aria-hidden="true">
+              <rect width="${W * S}" height="${H * S}" rx="24" class="grass"/>
+              <path d="${roads}" class="road"/>
+              <path d="${roads}" class="road-line"/>
+              <path d="" class="trail"/>
+              ${trees.join('')}
+              <circle cx="${c(0)}" cy="${c(0)}" r="30" class="start"/>
+            </svg>
+            <div class="spot goal" style="--x:${gx};--y:${gy}">${trip.goal}</div>
+            ${stars.map((s) => { const [x, y] = s.split(','); return `<div class="spot star" data-s="${s}" style="--x:${x};--y:${y}">⭐</div>`; }).join('')}
+            <div class="spot rider" style="--x:0;--y:0">${trip.rider}</div>
+          </div>`;
+        const ask = () => api.speak(`${trip.name}を ${trip.place}まで つれていってね`);
         root.querySelector('.replay').onclick = () => { api.tap(); ask(); };
 
         const board = root.querySelector('.maze');
         const riderEl = board.querySelector('.rider');
-        const cellAt = (x, y) => board.querySelector(`.cell[data-x="${x}"][data-y="${y}"]`);
-        let px = 0, py = 0, moves = 0, finished = false;
-        const place = () => { riderEl.style.setProperty('--x', px); riderEl.style.setProperty('--y', py); };
-        cellAt(0, 0).classList.add('trail');
-        place();
+        const trailEl = board.querySelector('.trail');
+        const countEl = root.querySelector('.star-count b');
+        const route = [[0, 0]]; // いま とおって いる みち（もどると けす）
+        let moves = 0, got = 0, finished = false;
 
-        const tryMove = (nx, ny) => {
-          if (finished || !open(m, px, py, nx, ny)) return;
-          px = nx; py = ny; moves++;
-          cellAt(px, py).classList.add('trail');
-          place();
-          api.tap();
-          if (px === n - 1 && py === n - 1) {
-            finished = true;
-            api.correct(cellAt(px, py));
-            api.speak('ごーる！').then(() => api.done(moves <= Math.ceil(best * 1.5)));
-          }
+        const draw = () => {
+          const [x, y] = route[route.length - 1];
+          riderEl.style.setProperty('--x', x);
+          riderEl.style.setProperty('--y', y);
+          trailEl.setAttribute('d', route.map(([rx, ry], i) => `${i ? 'L' : 'M'}${c(rx)} ${c(ry)}`).join(''));
         };
 
-        // ゆびの した の マスへ、となり なら すすむ（とびこしは 1マスずつ たどる）
+        const step = (nx, ny) => {
+          const [x, y] = route[route.length - 1];
+          if (finished || !m.inside(nx, ny) || !m.open(x, y, nx, ny)) return false;
+          const prev = route[route.length - 2];
+          if (prev && prev[0] === nx && prev[1] === ny) route.pop(); else route.push([nx, ny]);
+          moves++;
+          draw();
+          api.tap();
+          const star = board.querySelector(`.star[data-s="${nx},${ny}"]:not(.got)`);
+          if (star) {
+            star.classList.add('got');
+            countEl.textContent = ++got;
+            api.speak('ほし げっと！', { rate: 1.1 });
+          }
+          if (nx === gx && ny === gy) {
+            finished = true;
+            api.correct(board.querySelector('.goal'));
+            const msg = got === stars.length ? 'ほしも ぜんぶ ひろえたね！' : got ? `ほしを ${got}こ ひろえたね` : '';
+            api.speak(`${trip.place}に ついた！ ${msg}`).then(() => api.done(moves <= Math.ceil(best * 1.6) + 2));
+          }
+          return true;
+        };
+
+        // ゆびの いる マスへ むかって、みちが あれば 1マスずつ すすむ
         const follow = (e) => {
-          const el = document.elementFromPoint(e.clientX, e.clientY)?.closest('.cell');
-          if (!el || !board.contains(el)) return;
-          const tx = Number(el.dataset.x), ty = Number(el.dataset.y);
-          for (let guard = 0; guard < 2 * n && (tx !== px || ty !== py); guard++) {
-            const sx = px + Math.sign(tx - px), sy = py + Math.sign(ty - py);
-            const bx = px, by = py;
-            if (tx !== px && open(m, px, py, sx, py)) tryMove(sx, py);
-            else if (ty !== py && open(m, px, py, px, sy)) tryMove(px, sy);
-            if (bx === px && by === py) break;
+          const r = board.getBoundingClientRect();
+          const tx = Math.floor(((e.clientX - r.left) / r.width) * W);
+          const ty = Math.floor(((e.clientY - r.top) / r.height) * H);
+          if (!m.inside(tx, ty)) return;
+          for (let guard = 0; guard < W + H; guard++) {
+            const [x, y] = route[route.length - 1];
+            if (x === tx && y === ty) break;
+            const sx = x + Math.sign(tx - x), sy = y + Math.sign(ty - y);
+            const moved = (tx !== x && step(sx, y)) || (ty !== y && step(x, sy));
+            if (!moved) break;
           }
         };
         let dragging = false;
@@ -120,6 +196,7 @@ export default {
         board.addEventListener('pointermove', (e) => { if (dragging) follow(e); });
         board.addEventListener('pointerup', () => { dragging = false; });
         board.addEventListener('pointercancel', () => { dragging = false; });
+        draw();
         ask();
       },
     };
