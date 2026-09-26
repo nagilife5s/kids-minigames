@@ -7,8 +7,9 @@ import numberline from './games/numberline.js';
 import maze from './games/maze.js';
 import pattern from './games/pattern.js';
 import oddone from './games/oddone.js';
+import puzzle from './games/puzzle.js';
 
-const GAMES = [hiragana, count, numberline, maze, pattern, oddone];
+const GAMES = [hiragana, count, numberline, maze, puzzle, pattern, oddone];
 
 const app = document.getElementById('app');
 let data = load();
