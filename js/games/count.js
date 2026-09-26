@@ -19,7 +19,7 @@ export default {
   title: 'のりものを かぞえよう',
   icon: '🔢',
   color: '#74c0fc',
-  howto: 'のりものを ひとつずつ タッチして かぞえてね。いくつ あったか すうじを えらんでね',
+  howto: 'のりものを タッチして かぞえてね',
   levels: LEVELS.length,
   startLevel: (age) => (age <= 3 ? 1 : age <= 5 ? 2 : age === 6 ? 3 : 4),
 
@@ -46,10 +46,11 @@ export default {
         root.innerHTML = `
           <button class="replay" aria-label="もういちど きく">🔊</button>
           <div class="field ${ans > 10 ? 'many' : ''}">
-            ${Array.from({ length: ans }, () => `<button class="thing">${icon}</button>`).join('')}
+            ${Array.from({ length: Math.ceil(ans / 5) }, (_, g) => `<div class="group">${
+              Array.from({ length: Math.min(5, ans - g * 5) }, () => `<button class="thing">${icon}</button>`).join('')}</div>`).join('')}
           </div>
           <div class="choices nums n${L.n}">
-            ${sorted.map((c) => `<button class="choice" data-c="${c}">${c}</button>`).join('')}
+            ${sorted.map((c) => `<button class="choice" data-c="${c}">${api.noText && c <= 10 ? `<span class="dotnum">${'●'.repeat(c)}</span>` : ''}${c}</button>`).join('')}
           </div>`;
         root.querySelector('.replay').onclick = () => { api.tap(); ask(); };
 
@@ -73,6 +74,9 @@ export default {
               api.done(first);
             } else {
               first = false;
+              // かぞえた しるしを けして、さいしょから かぞえなおす
+              counted = 0;
+              root.querySelectorAll('.thing').forEach((t) => { delete t.dataset.n; t.classList.remove('counted'); });
               api.wrong(b);
               await api.speak('もういちど かぞえてみよう');
             }

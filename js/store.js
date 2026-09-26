@@ -7,11 +7,28 @@ export function load() {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return fresh();
-    const d = JSON.parse(raw);
-    return { ...fresh(), ...d, settings: { ...fresh().settings, ...(d.settings || {}) } };
+    return normalize(JSON.parse(raw));
   } catch {
     return fresh();
   }
+}
+
+// 古い・かけた データでも 落ちないよう、たりない こうもくを おぎなう
+function normalize(d) {
+  const base = fresh();
+  const profiles = (Array.isArray(d.profiles) ? d.profiles : [])
+    .filter((p) => p && p.id)
+    .map((p) => {
+      const blank = newProfile({ name: p.name || '？', icon: p.icon || '🚗', age: Number(p.age) || 6 });
+      const out = { ...blank, ...p };
+      for (const k of ['levels', 'stats', 'play', 'extra', 'seen', 'recent', 'todayStamps']) {
+        if (!out[k] || typeof out[k] !== 'object' || Array.isArray(out[k])) out[k] = {};
+      }
+      for (const k of ['history', 'robots']) if (!Array.isArray(out[k])) out[k] = [];
+      out.stamps = Number(out.stamps) || 0;
+      return out;
+    });
+  return { ...base, ...d, profiles, settings: { ...base.settings, ...(d.settings || {}) } };
 }
 
 export function save(data) {
@@ -44,5 +61,5 @@ export function exportJson(data) {
 export function importJson(text) {
   const d = JSON.parse(text);
   if (!d || !Array.isArray(d.profiles)) throw new Error('形式がちがいます');
-  return { ...fresh(), ...d };
+  return normalize(d);
 }

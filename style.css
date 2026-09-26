@@ -279,3 +279,16 @@ body { background: #8fd43c url("img/bg.svg") center bottom / cover no-repeat fix
 .reward, .end, .lock { background: rgba(255,255,255,.72); border-radius: 32px; margin: 4vh auto; padding: 24px 48px; flex: 0 1 auto; }
 .screen-parent .parent section { box-shadow: 0 4px 0 rgba(0,0,0,.08); }
 .gear { background: rgba(255,255,255,.8); }
+
+/* レビュー反映 */
+.quit { opacity: .7; font-size: 24px !important; min-width: 56px; }
+.quit.armed { opacity: 1; background: #e8590c; color: #fff; transform: scale(1.15); }
+.quit.armed::after { content: "もう いちど おすと やめる"; position: absolute; left: 110%; top: 50%; transform: translateY(-50%); white-space: nowrap;
+  background: #fff; color: var(--brown-ink); font-size: 18px; padding: 6px 12px; border-radius: 12px; }
+.no-text .quit.armed::after { content: "✕"; }
+.soon { align-self: center; background: #fff3bf; border-radius: 999px; padding: 8px 24px; font-size: 24px; margin-bottom: 8px; box-shadow: 0 4px 0 rgba(0,0,0,.1); }
+.today-stamps { font-size: 44px; max-width: 600px; text-align: center; }
+.field { gap: 22px; }
+.group { display: flex; gap: 10px; padding: 8px; border-radius: 18px; background: rgba(255,255,255,.6); }
+.dotnum { display: block; font-size: 20px; letter-spacing: 2px; color: #e8590c; max-width: 6em; margin: 0 auto 4px; line-height: 1.2; word-break: break-all; }
+.seq .item.hint { outline: 5px solid #ffd43b; transform: scale(1.12); transition: transform .2s; }

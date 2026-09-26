@@ -124,8 +124,13 @@ export default {
         const miss = async (el, v) => {
           first = false;
           api.wrong(el);
-          if (p.mode === 'locate' || p.mode === 'add') await api.speak(`そこは ${v} だよ`);
-          ask();
+          if (p.mode === 'locate' || p.mode === 'add') { await api.speak(`そこは ${v} だよ`); ask(); return; }
+          if (p.mode === 'compare') {
+            for (const x of p.pair) root.querySelector(`.tick[data-v="${x}"]`).classList.add('mark-on');
+            await api.speak('せんの みぎに あるほうが おおきいよ');
+            return;
+          }
+          await api.speak(`${p.answer - 1} の つぎは いくつかな？`);
         };
 
         if (tappable) {

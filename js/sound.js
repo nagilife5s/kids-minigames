@@ -36,8 +36,12 @@ export function unlock() {
   if ('speechSynthesis' in window && !voice) pickVoice();
 }
 
+// iPad の Safari は cancel 直後の speak が 鳴らなかったり、Utterance が 消えて onend が 来なかったり するので、
+// いまの Utterance を 持っておき、cancel したときは 少し まってから 話す
+let current = null;
 export function speak(text, { rate = 0.85, pitch = 1.1, cancel = true } = {}) {
   if (!('speechSynthesis' in window)) return Promise.resolve();
+  const wasBusy = speechSynthesis.speaking || speechSynthesis.pending;
   if (cancel) speechSynthesis.cancel();
   return new Promise((resolve) => {
     const u = new SpeechSynthesisUtterance(text);
@@ -45,14 +49,19 @@ export function speak(text, { rate = 0.85, pitch = 1.1, cancel = true } = {}) {
     u.rate = rate;
     u.pitch = pitch;
     if (voice) u.voice = voice;
-    u.onend = u.onerror = () => resolve();
-    speechSynthesis.speak(u);
-    setTimeout(resolve, 4000 + text.length * 250); // onend が来ない端末への保険
+    let timer = null;
+    const finish = () => { clearTimeout(timer); if (current === u) current = null; resolve(); };
+    u.onend = u.onerror = finish;
+    current = u;
+    timer = setTimeout(finish, 4000 + text.length * 250); // onend が 来ない ときの 保険
+    if (cancel && wasBusy) setTimeout(() => speechSynthesis.speak(u), 60);
+    else speechSynthesis.speak(u);
   });
 }
 
 function tone(freq, start, dur, type = 'sine', gain = 0.18) {
   if (!ctx) return;
+  if (ctx.state !== 'running') ctx.resume?.(); // 裏から もどると iPad は 止めて しまう
   const o = ctx.createOscillator();
   const g = ctx.createGain();
   o.type = type;

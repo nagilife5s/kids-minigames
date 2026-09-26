@@ -1,5 +1,5 @@
 // オフライン用の保存。ファイルを増やしたら FILES に足して VERSION を上げる
-const VERSION = 'v10';
+const VERSION = 'v11';
 const FILES = [
   './', 'index.html', 'style.css', 'manifest.webmanifest',
   'js/app.js', 'js/store.js', 'js/sound.js', 'js/data.js',
@@ -23,12 +23,16 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   // ネットにつながるときは最新を取りに行き、つながらないときだけ保存分を使う
+  // 電波が よわくて 返事が こない ときは 3びょうで 保存分に きりかえる
+  const net = fetch(e.request, { cache: 'no-cache' }).then((res) => {
+    if (res.ok) { const copy = res.clone(); caches.open(VERSION).then((c) => c.put(e.request, copy)); }
+    return res;
+  });
+  const cached = () => caches.match(e.request, { ignoreSearch: true });
+  const slow = new Promise((resolve) => setTimeout(resolve, 3000)).then(cached);
   e.respondWith(
-    fetch(e.request, { cache: 'no-cache' })
-      .then((res) => {
-        if (res.ok) { const copy = res.clone(); caches.open(VERSION).then((c) => c.put(e.request, copy)); }
-        return res;
-      })
-      .catch(() => caches.match(e.request, { ignoreSearch: true }))
+    Promise.race([net.catch(cached), slow.then((hit) => hit || net)])
+      .then((res) => res || net)
+      .catch(() => cached())
   );
 });

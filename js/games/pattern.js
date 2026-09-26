@@ -78,7 +78,10 @@ export default {
             } else {
               first = false;
               api.wrong(b);
-              await api.speak('ならびかたを よく みてね');
+              const items = [...root.querySelectorAll('.item')].slice(0, unit.length);
+              api.speak('ここを みてね。 おなじ ならびが くりかえして いるよ');
+              for (const it of items) { it.classList.add('hint'); await new Promise((r) => setTimeout(r, 450)); }
+              setTimeout(() => items.forEach((it) => it.classList.remove('hint')), 900);
             }
           };
         });

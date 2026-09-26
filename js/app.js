@@ -10,6 +10,10 @@ import oddone from './games/oddone.js';
 import puzzle from './games/puzzle.js';
 
 const GAMES = [hiragana, count, numberline, maze, puzzle, pattern, oddone];
+// 3さいには 文字や すうじの せんが いる ゲームは 出さない
+const MIN_AGE = { hira: 4, line: 4 };
+const gamesFor = (p) => GAMES.filter((g) => p.age >= (MIN_AGE[g.id] || 0));
+const pickOne = (a) => a[Math.floor(Math.random() * a.length)];
 
 const app = document.getElementById('app');
 let data = load();
@@ -43,6 +47,16 @@ function addPlay(p, ms) {
   persist();
 }
 
+// ラウンド中に アプリを 閉じたり 裏に回したときも 時間を 数える
+let roundStart = null;
+document.addEventListener('visibilitychange', () => {
+  if (!me || roundStart === null) return;
+  if (document.hidden) { addPlay(me, Date.now() - roundStart); roundStart = null; }
+});
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && me && app.classList.contains('screen-play') && roundStart === null) roundStart = Date.now();
+});
+
 // ---------- こどもを えらぶ ----------
 function screenProfiles() {
   me = null;
@@ -71,20 +85,24 @@ function screenProfiles() {
 function screenMenu() {
   if (timeUp(me)) return screenEnd();
   const robotsGot = me.robots.length;
+  const leftMs = allowedMs(me) - playedMs(me);
+  const soon = data.settings.limitMin > 0 && leftMs <= 3 * 60000;
   view(`
     <header class="bar">
       <button class="back sign" aria-label="もどる">◀</button>
       <span class="who">${me.icon} <span class="txt">${esc(me.name)}</span></span>
       <button class="stampbtn" aria-label="ずかん">⭐ ${me.stamps}　🤖 ${robotsGot}</button>
     </header>
+    ${soon ? '<div class="soon">⏰ <span class="txt">あと 1かいで おしまい だよ</span></div>' : ''}
     <div class="games">
-      ${GAMES.map((g) => `
+      ${gamesFor(me).map((g) => `
         <button class="game" data-id="${g.id}" style="--c:${g.color}">
           <span class="gtitle txt">${g.title}</span>
           <span class="thumb">${g.icon}</span>
           <span class="pill">▶ <span class="txt">あそぶ</span></span>
         </button>`).join('')}
     </div>`, 'screen-menu');
+  if (soon) speak('あと 1かいで おしまい だよ');
   app.querySelector('.back').onclick = screenProfiles;
   app.querySelector('.stampbtn').onclick = screenZukan;
   app.querySelectorAll('.game').forEach((b) => {
@@ -105,65 +123,92 @@ function screenIntro(game) {
       <p class="howto txt">${game.howto}</p>
       ${mascot()}
     </div>`, 'screen-intro');
-  speak(`${game.title}。 ${game.howto}`);
+  me.seen ||= {};
+  speak(me.seen[game.id] ? game.title : `${game.title}。 ${game.howto}`);
+  me.seen[game.id] = true;
   app.querySelector('.back').onclick = () => { speechSynthesis.cancel(); screenMenu(); };
   app.querySelector('.start').onclick = () => { sfx.tap(); playRound(game); };
 }
 
 // ---------- 1かい（5もん）あそぶ ----------
 async function playRound(game) {
-  const started = Date.now();
+  roundStart = Date.now();
   let level = me.levels[game.id] ?? game.startLevel(me.age);
   const stats = (me.stats[game.id] ||= {});
+  const recent = ((me.recent ||= {})[game.id] ||= []);
   let okCount = 0;
   let quit = false;
+  let alive = true; // ラウンドを ぬけたら false。のこった 読み上げや うごきを とめる
+  const never = new Promise(() => {});
 
   for (let i = 0; i < QUESTIONS_PER_ROUND && !quit; i++) {
     const q = game.question(level, stats);
     view(`
       <header class="bar">
-        <button class="back sign" aria-label="やめる">✕</button>
+        <button class="back sign quit" aria-label="やめる">✕</button>
         <div class="dots">${Array.from({ length: QUESTIONS_PER_ROUND }, (_, k) =>
           `<span class="dot ${k < i ? 'done' : k === i ? 'now' : ''}"></span>`).join('')}</div>
         <span></span>
       </header>
       <div class="stage"></div>`, 'screen-play');
     const firstOk = await new Promise((resolve) => {
-      app.querySelector('.back').onclick = () => { quit = true; speechSynthesis.cancel(); resolve(null); };
+      // まちがって さわっても おわらないよう、2かい つづけて おしたら やめる
+      const qb = app.querySelector('.quit');
+      let armed = null;
+      qb.onclick = () => {
+        if (!armed) {
+          qb.classList.add('armed');
+          armed = setTimeout(() => { armed = null; qb.classList.remove('armed'); }, 2000);
+          return;
+        }
+        quit = true; alive = false; speechSynthesis.cancel(); resolve(null);
+      };
+      let finished = false;
       q.render(app.querySelector('.stage'), {
-        speak,
-        tap: sfx.tap,
+        speak: (t, o) => (alive ? speak(t, o).then(() => (alive ? undefined : never)) : never),
+        tap: () => { if (alive) sfx.tap(); },
+        noText: noText(),
         correct(el) { sfx.ok(); el.classList.add('ok'); lockChoices(); showMark(true); },
         wrong(el) { sfx.ng(); el.classList.add('ng'); el.disabled = true; showMark(false); },
-        done: (ok) => setTimeout(() => resolve(ok), 500),
+        done: (ok) => { if (finished || !alive) return; finished = true; setTimeout(() => resolve(ok), 500); },
       });
     });
     if (firstOk === null) break;
     const s = (stats[q.key] ||= { n: 0, ok: 0 });
     s.n++;
     if (firstOk) { s.ok++; okCount++; }
+    recent.push(firstOk ? 1 : 0);
+    if (recent.length > 10) recent.shift();
   }
 
-  addPlay(me, Date.now() - started);
+  if (roundStart !== null) addPlay(me, Date.now() - roundStart);
+  roundStart = null;
   if (quit) { persist(); return screenMenu(); }
 
-  // 正解率で難しさを自動で上げ下げする
-  const rate = okCount / QUESTIONS_PER_ROUND;
-  if (rate >= 0.8 && level < game.levels - 1) level++;
-  else if (rate <= 0.4 && level > 0) level--;
+  // 直近10もんの 正解率で 難しさを 上げ下げ（5もん だけだと まぐれで ゆれるため）
+  if (recent.length >= 10) {
+    const rate = recent.reduce((a, b) => a + b, 0) / recent.length;
+    if (rate >= 0.8 && level < game.levels - 1) { level++; recent.length = 0; }
+    else if (rate <= 0.4 && level > 0) { level--; recent.length = 0; }
+  } else if (okCount === 0 && level > 0) {
+    level--; recent.length = 0; // まったく できない ときは すぐ さげる
+  }
   me.levels[game.id] = level;
   me.history.push({ game: game.id, at: Date.now(), ok: okCount, total: QUESTIONS_PER_ROUND });
   if (me.history.length > 300) me.history.splice(0, me.history.length - 300);
 
-  // ごほうび（失敗しても スタンプは もらえる）
+  // ごほうび（失敗しても スタンプは もらえる）。ろぼが ぜんぶ そろったら めだる
   me.stamps++;
   let robot = null;
+  let medal = false;
   if (me.stamps % STAMPS_PER_ROBOT === 0) {
     robot = ROBOTS.find((r) => !me.robots.includes(r.id));
     if (robot) me.robots.push(robot.id);
+    else { me.medals = (me.medals || 0) + 1; medal = true; }
   }
+  (me.todayStamps ||= {})[today()] = ((me.todayStamps || {})[today()] || 0) + 1;
   persist();
-  screenReward(game, robot);
+  screenReward(game, robot, medal, okCount);
 }
 
 // まるの ときは おおきな ⭕ と きらきら、ちがう ときは やさしく「おしい！」
@@ -181,8 +226,12 @@ function lockChoices() {
   app.querySelectorAll('.choice').forEach((b) => { b.disabled = true; });
 }
 
-function screenReward(game, robot) {
+const PRAISE_ALL = ['5もん ぜんぶ できたね！', 'すごい！ ぜんもん せいかい！', 'かんぺき！'];
+const PRAISE = ['さいごまで がんばったね！', 'よく かんがえたね！', 'いっぱい ちょうせん したね！', 'どんどん じょうずに なってるよ！'];
+
+function screenReward(game, robot, medal, okCount) {
   const left = STAMPS_PER_ROBOT - (me.stamps % STAMPS_PER_ROBOT);
+  const praise = pickOne(okCount === QUESTIONS_PER_ROUND ? PRAISE_ALL : PRAISE);
   view(`
     <div class="reward">
       <div class="stamp pop">⭐</div>
@@ -190,14 +239,14 @@ function screenReward(game, robot) {
       ${robot ? `
         <div class="newrobot pop">${art(robot.img, robot.emoji, 'robot-art')}</div>
         <p class="txt">あたらしい ろぼ 「${robot.name}」が なかまに なったよ！</p>` : `
-        <p class="txt">あと ${left}こで あたらしい ろぼが くるよ</p>`}
+        <p class="txt">${medal ? '🏅 きらきら めだる げっと！' : `あと ${left}こで あたらしい ろぼが くるよ`}</p>`}
       <div class="row">
         <button class="menu" aria-label="もどる">🏠</button>
         <button class="again">🔁 <span class="txt">もういちど</span></button>
       </div>
     </div>`, 'screen-reward');
   sfx.fanfare();
-  speak(robot ? `すたんぷ げっと！ ${robot.name}が なかまに なったよ！` : 'すたんぷ げっと！ よく がんばったね！');
+  speak(robot ? `${praise} ${robot.name}が なかまに なったよ！` : medal ? `${praise} きらきら めだるも もらえたよ！` : `すたんぷ げっと！ ${praise}`);
   app.querySelector('.menu').onclick = screenMenu;
   app.querySelector('.again').onclick = () => (timeUp(me) ? screenEnd() : playRound(game));
 }
@@ -208,7 +257,7 @@ function screenZukan() {
     <header class="bar">
       <button class="back sign" aria-label="もどる">◀</button>
       <span class="txt">ろぼ ずかん</span>
-      <span>⭐ ${me.stamps}</span>
+      <span>⭐ ${me.stamps}${me.medals ? `　🏅 ${me.medals}` : ''}</span>
     </header>
     <div class="zukan">
       ${ROBOTS.map((r) => {
@@ -230,13 +279,14 @@ function screenEnd() {
     <div class="end">
       <div class="huge">🌙</div>
       <h2 class="txt">きょうは おしまい！</h2>
-      <p class="txt">また あした あそぼうね</p>
+      <div class="today-stamps">${'⭐'.repeat(Math.min(((me.todayStamps || {})[today()] || 0), 20)) || '⭐'}</div>
+      <p class="txt">きょうも がんばったね。また あした あそぼうね</p>
       <div class="row">
-        <button class="menu" aria-label="もどる">🏠</button>
+        <button class="menu" aria-label="こうたい">👫 <span class="txt">こうたい</span></button>
         <button class="gear" aria-label="おうちのひと">⚙️</button>
       </div>
     </div>`, 'screen-end');
-  speak('きょうは おしまい！ また あした あそぼうね');
+  speak('きょうは おしまい！ きょうも がんばったね。 また あした あそぼうね');
   app.querySelector('.menu').onclick = screenProfiles;
   app.querySelector('.gear').onclick = () => screenLock(screenParent);
 }
