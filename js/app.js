@@ -17,6 +17,10 @@ let me = null; // いま遊んでいる子のプロフィール
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 const persist = () => save(data);
+// がぞう（img/ に おいた png）。まだ ない ときは えもじで かわりに だす
+const art = (src, emoji, cls = '') =>
+  `<span class="art ${cls}"><img src="${src}" alt="" draggable="false" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'emo',textContent:'${emoji}'}))"></span>`;
+const mascot = () => `<div class="mascot">${art('img/mascot.png', '🤖')}<span class="spot-light"></span></div>`;
 // 3さい以下は文字を出さず、絵と音声だけにする
 const noText = () => me && me.age <= 3;
 
@@ -69,15 +73,16 @@ function screenMenu() {
   const robotsGot = me.robots.length;
   view(`
     <header class="bar">
-      <button class="back" aria-label="もどる">⬅️</button>
+      <button class="back sign" aria-label="もどる">◀</button>
       <span class="who">${me.icon} <span class="txt">${esc(me.name)}</span></span>
       <button class="stampbtn" aria-label="ずかん">⭐ ${me.stamps}　🤖 ${robotsGot}</button>
     </header>
     <div class="games">
       ${GAMES.map((g) => `
         <button class="game" data-id="${g.id}" style="--c:${g.color}">
-          <span class="gicon">${g.icon}</span>
-          <span class="txt">${g.title}</span>
+          <span class="gtitle txt">${g.title}</span>
+          <span class="thumb">${g.icon}</span>
+          <span class="pill">▶ <span class="txt">あそぶ</span></span>
         </button>`).join('')}
     </div>`, 'screen-menu');
   app.querySelector('.back').onclick = screenProfiles;
@@ -90,14 +95,15 @@ function screenMenu() {
 // ---------- ゲームしょうかい → はじめる ----------
 function screenIntro(game) {
   view(`
+    <button class="back sign corner" aria-label="もどる">◀</button>
     <div class="intro" style="--c:${game.color}">
-      <div class="gicon huge">${game.icon}</div>
-      <h2 class="txt">${game.title}</h2>
-      <p class="txt">${game.howto}</p>
-      <div class="row">
-        <button class="back" aria-label="もどる">⬅️</button>
+      <div class="icard">
+        <h2 class="txt">${game.title}</h2>
+        <div class="thumb big-thumb">${game.icon}</div>
         <button class="start">▶ <span class="txt">はじめる</span></button>
       </div>
+      <p class="howto txt">${game.howto}</p>
+      ${mascot()}
     </div>`, 'screen-intro');
   speak(`${game.title}。 ${game.howto}`);
   app.querySelector('.back').onclick = () => { speechSynthesis.cancel(); screenMenu(); };
@@ -116,7 +122,7 @@ async function playRound(game) {
     const q = game.question(level, stats);
     view(`
       <header class="bar">
-        <button class="back" aria-label="やめる">✖️</button>
+        <button class="back sign" aria-label="やめる">✕</button>
         <div class="dots">${Array.from({ length: QUESTIONS_PER_ROUND }, (_, k) =>
           `<span class="dot ${k < i ? 'done' : k === i ? 'now' : ''}"></span>`).join('')}</div>
         <span></span>
@@ -182,7 +188,7 @@ function screenReward(game, robot) {
       <div class="stamp pop">⭐</div>
       <h2 class="txt">すたんぷ げっと！</h2>
       ${robot ? `
-        <div class="newrobot pop"><span class="huge">${robot.emoji}</span><span class="badge">🤖</span></div>
+        <div class="newrobot pop">${art(robot.img, robot.emoji, 'robot-art')}</div>
         <p class="txt">あたらしい ろぼ 「${robot.name}」が なかまに なったよ！</p>` : `
         <p class="txt">あと ${left}こで あたらしい ろぼが くるよ</p>`}
       <div class="row">
@@ -200,7 +206,7 @@ function screenReward(game, robot) {
 function screenZukan() {
   view(`
     <header class="bar">
-      <button class="back" aria-label="もどる">⬅️</button>
+      <button class="back sign" aria-label="もどる">◀</button>
       <span class="txt">ろぼ ずかん</span>
       <span>⭐ ${me.stamps}</span>
     </header>
@@ -208,7 +214,7 @@ function screenZukan() {
       ${ROBOTS.map((r) => {
         const got = me.robots.includes(r.id);
         return `<button class="card ${got ? 'got' : ''}" data-id="${r.id}">
-          <span class="big">${got ? r.emoji : '❓'}</span>
+          ${got ? art(r.img, r.emoji, 'robot-art') : '<span class="big">❓</span>'}
           <span class="txt">${got ? r.name : '？？？'}</span></button>`;
       }).join('')}
     </div>`, 'screen-zukan');
@@ -291,7 +297,7 @@ function screenParent(back) {
   me = null;
   view(`
     <header class="bar">
-      <button class="back">⬅️ もどる</button>
+      <button class="back sign">◀</button>
       <span>おうちのひと</span><span></span>
     </header>
     <div class="parent">

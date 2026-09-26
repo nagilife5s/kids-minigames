@@ -16,6 +16,8 @@ export const ROBOTS = [
 ];
 
 // スタンプ何こでろぼが1たい手に入るか
+for (const r of ROBOTS) r.img = `img/robots/${r.id}.png`;
+
 export const STAMPS_PER_ROBOT = 3;
 
 export const PROFILE_ICONS = ['🚗', '🚒', '🚓', '🚑', '🚌', '🚜', '🚄', '✈️', '🚀', '🤖'];

@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6fd6f2"/>
+      <stop offset="1" stop-color="#c9f1fb"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#sky)"/>
+  <!-- たいよう -->
+  <circle cx="260" cy="330" r="300" fill="#ffd95a"/>
+  <circle cx="260" cy="330" r="230" fill="#ffe27a"/>
+  <!-- くも -->
+  <g fill="#fff">
+    <ellipse cx="1180" cy="150" rx="70" ry="34"/><ellipse cx="1230" cy="128" rx="54" ry="42"/><ellipse cx="1280" cy="152" rx="60" ry="30"/>
+    <ellipse cx="500" cy="230" rx="46" ry="22"/><ellipse cx="532" cy="216" rx="36" ry="28"/><ellipse cx="566" cy="232" rx="40" ry="20"/>
+  </g>
+  <!-- とおくの やま -->
+  <path d="M0 520 Q140 380 300 470 Q420 330 560 430 Q700 300 860 420 Q1000 330 1140 410 Q1300 290 1460 400 Q1540 360 1600 390 V1000 H0Z" fill="#b5e86a"/>
+  <!-- たてもの（とおく） -->
+  <g fill="#98d552">
+    <rect x="360" y="330" width="70" height="220" rx="10"/><rect x="440" y="380" width="54" height="170" rx="10"/>
+    <rect x="1330" y="340" width="64" height="210" rx="10"/><rect x="1404" y="390" width="48" height="160" rx="10"/>
+  </g>
+  <g fill="#c8f08a">
+    <rect x="378" y="360" width="10" height="10" rx="3"/><rect x="398" y="360" width="10" height="10" rx="3"/><rect x="378" y="382" width="10" height="10" rx="3"/><rect x="398" y="382" width="10" height="10" rx="3"/>
+    <rect x="1348" y="372" width="10" height="10" rx="3"/><rect x="1368" y="372" width="10" height="10" rx="3"/><rect x="1348" y="394" width="10" height="10" rx="3"/><rect x="1368" y="394" width="10" height="10" rx="3"/>
+  </g>
+  <!-- まんなかの おか -->
+  <path d="M0 600 Q200 470 420 560 Q600 450 800 540 Q1000 450 1200 540 Q1400 460 1600 540 V1000 H0Z" fill="#8fd43c"/>
+  <!-- き（まんなか） -->
+  <g fill="#5fb52a">
+    <path d="M150 600 L200 470 L250 600Z"/><rect x="194" y="596" width="12" height="30" fill="#4a9a22"/>
+    <circle cx="610" cy="540" r="46"/><rect x="604" y="570" width="12" height="40" fill="#4a9a22"/>
+    <path d="M1040 580 L1085 460 L1130 580Z"/><rect x="1079" y="576" width="12" height="30" fill="#4a9a22"/>
+    <circle cx="1480" cy="540" r="54"/><rect x="1474" y="576" width="12" height="40" fill="#4a9a22"/>
+  </g>
+  <!-- てまえの のはら -->
+  <path d="M0 690 Q400 640 800 660 Q1200 640 1600 680 V1000 H0Z" fill="#7cc631"/>
+  <path d="M0 760 Q400 730 800 745 Q1200 730 1600 760 V1000 H0Z" fill="#8ed13e"/>
+  <!-- てまえの しげみ -->
+  <g fill="#3f9e24">
+    <ellipse cx="60" cy="960" rx="260" ry="160"/><ellipse cx="1560" cy="960" rx="240" ry="150"/>
+  </g>
+  <g fill="#52b52c">
+    <ellipse cx="90" cy="990" rx="200" ry="110"/><ellipse cx="1530" cy="990" rx="190" ry="110"/>
+  </g>
+  <!-- はな -->
+  <g fill="#ffe066"><circle cx="120" cy="880" r="7"/><circle cx="220" cy="930" r="6"/><circle cx="1490" cy="870" r="7"/><circle cx="1400" cy="930" r="6"/></g>
+  <g fill="#74c0fc"><circle cx="60" cy="920" r="6"/><circle cx="1540" cy="910" r="6"/></g>
+  <g fill="#fff" opacity=".7"><circle cx="700" cy="820" r="4"/><circle cx="900" cy="860" r="4"/><circle cx="500" cy="880" r="3"/><circle cx="1100" cy="840" r="3"/></g>
+</svg>

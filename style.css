@@ -221,3 +221,61 @@ button:disabled { opacity: .45; }
 
 @keyframes pop { 0% { transform: scale(.6); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
 @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+
+/* ===== みため（そとの けしき・かんばん・きいろい ぼたん） ===== */
+body { background: #8fd43c url("img/bg.svg") center bottom / cover no-repeat fixed; }
+:root { --wood: #9a5b2a; --wood-dark: #6e3d17; --yellow: #ffd400; --yellow-edge: #c28a00; --brown-ink: #5a3510; }
+
+/* もどる: きの かんばん */
+.sign { background: var(--wood); color: var(--yellow); font-weight: bold; border-radius: 10px; min-width: 72px; padding: 8px 18px !important; font-size: 30px !important;
+  box-shadow: 0 5px 0 var(--wood-dark); position: relative; }
+.sign::before { content: ""; position: absolute; left: 50%; top: -18px; width: 4px; height: 18px; background: var(--wood-dark); transform: translateX(-50%); }
+.sign:active { box-shadow: 0 1px 0 var(--wood-dark); }
+.corner { position: fixed; left: max(16px, env(safe-area-inset-left)); top: max(26px, env(safe-area-inset-top)); z-index: 5; }
+
+/* きいろい ぼたん */
+.start, .pill, .again {
+  background: var(--yellow); color: var(--brown-ink); font-weight: bold; border-radius: 999px;
+  border: 4px solid #fff; box-shadow: 0 0 0 3px var(--yellow-edge), 0 7px 0 3px var(--yellow-edge);
+}
+.start:active, .again:active { transform: translateY(5px); box-shadow: 0 0 0 3px var(--yellow-edge), 0 2px 0 3px var(--yellow-edge); }
+
+/* しろい かーど */
+.title { align-self: center; background: #fff; color: var(--brown-ink); border-radius: 999px; padding: 10px 40px; font-size: 38px; box-shadow: 0 6px 0 rgba(0,0,0,.12); }
+.profile, .game, .icard, .stampbtn, .card { border-radius: 22px; box-shadow: 0 6px 0 rgba(0,0,0,.12); }
+.bar .who { background: rgba(255,255,255,.85); border-radius: 999px; padding: 6px 20px; }
+.stampbtn { background: #fff; }
+
+/* ゲームいちらん */
+.games { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 26px 22px; padding-top: 8px; }
+.game { background: #fff; min-height: 0; padding: 14px 14px 22px; gap: 12px; justify-content: flex-start; }
+.game .gtitle { font-size: 20px; font-weight: bold; min-height: 2.6em; display: grid; place-items: center; line-height: 1.3; }
+.thumb { width: 100%; aspect-ratio: 16 / 10; border-radius: 12px; background: var(--c); display: grid; place-items: center;
+  font-size: 76px; line-height: 1; color: #fff; font-weight: bold; text-shadow: 0 4px 0 rgba(0,0,0,.12); }
+.pill { font-size: 22px; padding: 6px 26px; }
+.no-text .game .gtitle { display: none; }
+
+/* しょうかい */
+.screen-intro .intro { justify-content: flex-start; padding-top: 12px; gap: 14px; }
+.icard { background: #fff; width: min(440px, 90vw, 56vh); padding: 18px 22px 28px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.icard h2 { font-size: 30px; margin: 0; }
+.big-thumb { font-size: 110px; }
+.icard .start { font-size: 34px; padding: 10px 56px; }
+.howto { background: rgba(255,255,255,.85); border-radius: 18px; padding: 10px 22px; font-size: 22px !important; max-width: 600px; margin: 0; }
+.mascot { position: relative; display: grid; place-items: center; margin-top: auto; margin-bottom: 4vh; }
+.mascot .art { position: relative; z-index: 1; }
+.mascot .art img { height: min(26vh, 220px); }
+.mascot .emo { font-size: min(18vh, 150px); line-height: 1; }
+.spot-light { position: absolute; bottom: -14px; width: 180px; height: 44px; border-radius: 50%; background: rgba(255,255,220,.75); }
+.art img { display: block; max-width: 100%; -webkit-user-drag: none; }
+.robot-art img { height: 150px; }
+.robot-art .emo { font-size: 110px; line-height: 1; }
+.card .robot-art img { height: 90px; }
+.card .robot-art .emo { font-size: 72px; }
+
+/* あそぶ: けしきの うえに しろい いた */
+.screen-play .stage { background: rgba(255,255,255,.72); border-radius: 32px; padding: 20px; margin: 0 auto 8px; width: 100%; max-width: 1100px; }
+.screen-play .bar .dots { background: rgba(255,255,255,.85); padding: 8px 14px; border-radius: 999px; }
+.reward, .end, .lock { background: rgba(255,255,255,.72); border-radius: 32px; margin: 4vh auto; padding: 24px 48px; flex: 0 1 auto; }
+.screen-parent .parent section { box-shadow: 0 4px 0 rgba(0,0,0,.08); }
+.gear { background: rgba(255,255,255,.8); }

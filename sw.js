@@ -1,11 +1,11 @@
 // オフライン用の保存。ファイルを増やしたら FILES に足して VERSION を上げる
-const VERSION = 'v9';
+const VERSION = 'v10';
 const FILES = [
   './', 'index.html', 'style.css', 'manifest.webmanifest',
   'js/app.js', 'js/store.js', 'js/sound.js', 'js/data.js',
   'js/games/hiragana.js', 'js/games/count.js', 'js/games/numberline.js',
   'js/games/maze.js', 'js/games/pattern.js', 'js/games/oddone.js', 'js/games/puzzle.js',
-  'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',
+  'img/bg.svg', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',
 ];
 
 self.addEventListener('install', (e) => {
