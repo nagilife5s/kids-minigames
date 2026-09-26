@@ -51,8 +51,8 @@ button:disabled { opacity: .45; }
 
 /* ゲーム一覧 */
 .games { flex: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 28px; align-content: center; }
-.game { background: var(--c); min-height: 260px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 20px; font-size: 26px; }
-.gicon { font-size: 110px; line-height: 1; font-weight: bold; color: #fff; text-shadow: 0 4px 0 rgba(0,0,0,.15); }
+.game { background: var(--c); min-height: 220px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 20px; font-size: 26px; }
+.gicon { font-size: 96px; line-height: 1; font-weight: bold; color: #fff; text-shadow: 0 4px 0 rgba(0,0,0,.15); }
 
 /* しょうかい */
 .intro, .reward, .end, .lock { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
@@ -103,6 +103,25 @@ button:disabled { opacity: .45; }
 .rider { position: absolute; top: 20px; left: calc((var(--v) + .5) * 100% / var(--n)); transform: translateX(-50%); font-size: 60px; line-height: 1; transition: left .35s ease-out; }
 .rider.hop { animation: hop .4s; }
 @keyframes hop { 50% { transform: translate(-50%, -26px); } }
+
+/* めいろ */
+.maze { position: relative; display: grid; grid-template-columns: repeat(var(--n), 1fr); width: min(600px, 88vw, calc(100dvh - 250px)); aspect-ratio: 1; background: #fff; border: 6px solid var(--ink); border-radius: 8px; touch-action: none; }
+.cell { border-right: 6px solid transparent; border-bottom: 6px solid transparent; margin: 0 -3px -3px 0; display: grid; place-items: center; }
+.cell.wr { border-right-color: var(--ink); }
+.cell.wb { border-bottom-color: var(--ink); }
+.cell.trail { background: #fff3bf; }
+.cell .goal { font-size: calc(360px / var(--n)); }
+.maze .rider { position: absolute; width: calc(100% / var(--n)); height: calc(100% / var(--n)); left: calc(var(--x) * 100% / var(--n)); top: calc(var(--y) * 100% / var(--n)); display: grid; place-items: center; font-size: calc(360px / var(--n)); transform: none; transition: left .12s, top .12s; pointer-events: none; }
+
+/* つぎは どれ？ ／ なかまはずれ */
+.seq { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; max-width: 960px; }
+.seq .item { font-size: 64px; width: 96px; height: 96px; display: grid; place-items: center; background: #fff; border-radius: 20px; }
+.seq.long .item { font-size: 48px; width: 76px; height: 76px; }
+.seq .item.q { border: 5px dashed #e8590c; color: #e8590c; font-weight: bold; }
+.seq .item.filled { background: #d3f9d8; animation: pop .4s; }
+.emo .choice { font-size: 90px; }
+.choices.n5 { grid-template-columns: repeat(5, 1fr); }
+.n5 .choice { font-size: 72px; }
 
 /* ごほうび */
 .stamp { font-size: 160px; }

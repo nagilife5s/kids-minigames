@@ -4,8 +4,11 @@ import { ROBOTS, STAMPS_PER_ROBOT, PROFILE_ICONS, QUESTIONS_PER_ROUND } from './
 import hiragana from './games/hiragana.js';
 import count from './games/count.js';
 import numberline from './games/numberline.js';
+import maze from './games/maze.js';
+import pattern from './games/pattern.js';
+import oddone from './games/oddone.js';
 
-const GAMES = [hiragana, count, numberline];
+const GAMES = [hiragana, count, numberline, maze, pattern, oddone];
 
 const app = document.getElementById('app');
 let data = load();
