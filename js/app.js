@@ -8,10 +8,11 @@ import maze from './games/maze.js';
 import pattern from './games/pattern.js';
 import oddone from './games/oddone.js';
 import puzzle from './games/puzzle.js';
+import words from './games/words.js';
 
-const GAMES = [hiragana, count, numberline, maze, puzzle, pattern, oddone];
+const GAMES = [hiragana, words, count, numberline, maze, puzzle, pattern, oddone];
 // 3さいには 文字や すうじの せんが いる ゲームは 出さない
-const MIN_AGE = { hira: 4, line: 4 };
+const MIN_AGE = { hira: 4, words: 4, line: 4 };
 const gamesFor = (p) => GAMES.filter((g) => p.age >= (MIN_AGE[g.id] || 0));
 const pickOne = (a) => a[Math.floor(Math.random() * a.length)];
 
