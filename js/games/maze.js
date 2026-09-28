@@ -13,37 +13,41 @@ const TRIPS = [
   { rider: '🚗', goal: '🏠', name: 'くるま', robot: 'car', place: 'おうち' },
 ];
 
-// cols×rows（よこながの iPad むけ）。braid は いきどまりを へらす わりあい（ちいさい こ むけ）
+// rows は みじかい ほうの マスの かず。ながい ほうは がめんの たてよこ ひに あわせて きめる（がめん いっぱいに ひろげる）
+// branch: わかれみちの おおさ（0 = ながい 1ぽんみち ぎみ、1 = わかれみち だらけ）
+// braid: いきどまりを へらす わりあい（ちいさい こ むけ）
 const LEVELS = [
-  { cols: 4, rows: 3, braid: 0.6, stars: 1 },
-  { cols: 5, rows: 3, braid: 0.4, stars: 2 },
-  { cols: 6, rows: 4, braid: 0.3, stars: 2 },
-  { cols: 7, rows: 5, braid: 0.15, stars: 3 },
-  { cols: 9, rows: 6, braid: 0.05, stars: 3 },
-  { cols: 11, rows: 7, braid: 0, stars: 3 },
-  { cols: 13, rows: 8, braid: 0, stars: 3 },
+  { rows: 3, braid: 0.6, branch: 0.2, stars: 1 },
+  { rows: 3, braid: 0.4, branch: 0.3, stars: 2 },
+  { rows: 4, braid: 0.3, branch: 0.4, stars: 2 },
+  { rows: 5, braid: 0.15, branch: 0.5, stars: 3 },
+  { rows: 6, braid: 0.05, branch: 0.35, stars: 3 },
+  { rows: 7, braid: 0, branch: 0.35, stars: 3 },
+  { rows: 8, braid: 0, branch: 0.35, stars: 3 },
   // ここから かぎ 🔑: みちから はずれた いきどまりの かぎを とらないと ごーるに はいれない
-  { cols: 13, rows: 8, braid: 0, stars: 3, key: true },
-  { cols: 15, rows: 9, braid: 0, stars: 3, key: true },
-  { cols: 17, rows: 10, braid: 0, stars: 3, key: true },
-  { cols: 19, rows: 11, braid: 0, stars: 3, key: true },
+  { rows: 8, braid: 0, branch: 0.35, stars: 3, key: true },
+  { rows: 9, braid: 0, branch: 0.35, stars: 3, key: true },
+  { rows: 10, braid: 0, branch: 0.35, stars: 3, key: true },
+  { rows: 11, braid: 0, branch: 0.35, stars: 3, key: true },
 ];
 
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
 // あなほり法で めいろ → いくつか かべを こわして いきどまりを へらす
-function generate(W, H, braid, keep = () => false) {
+function generate(W, H, braid, keep = () => false, branch = 0) {
   const link = new Set(); // "x,y|nx,ny" どうしが つながって いる
   const key = (a, b, c, d) => (a < c || (a === c && b < d) ? `${a},${b}|${c},${d}` : `${c},${d}|${a},${b}`);
   const seen = Array.from({ length: H }, () => Array(W).fill(false));
   const stack = [[0, 0]];
   seen[0][0] = true;
   while (stack.length) {
-    const [x, y] = stack[stack.length - 1];
+    // あたらしい ますから のばすと ながい みち、らんだむな ますから のばすと わかれみち に なる
+    const idx = Math.random() < branch ? Math.floor(Math.random() * stack.length) : stack.length - 1;
+    const [x, y] = stack[idx];
     const next = DIRS.map(([dx, dy]) => [x + dx, y + dy])
       .filter(([nx, ny]) => nx >= 0 && ny >= 0 && nx < W && ny < H && !seen[ny][nx]);
-    if (!next.length) { stack.pop(); continue; }
+    if (!next.length) { stack.splice(idx, 1); continue; }
     const [nx, ny] = pick(next);
     link.add(key(x, y, nx, ny));
     seen[ny][nx] = true;
@@ -89,37 +93,46 @@ export default {
 
   question(level) {
     const L = LEVELS[level];
-    // たてながで もって いたら たて・よこを いれかえる
-    const portrait = innerHeight > innerWidth;
-    const W = portrait ? L.rows : L.cols;
-    const H = portrait ? L.cols : L.rows;
+    // がめんの あいて いる ばしょの たてよこ ひに あわせて ますの かずを きめる
+    const aspect = Math.max(0.5, Math.min(2.2, (innerWidth - 24) / (innerHeight - 88)));
+    const portrait = aspect < 1;
+    const W = portrait ? L.rows : Math.max(L.rows + 1, Math.round(L.rows * aspect));
+    const H = portrait ? Math.max(L.rows + 1, Math.round(L.rows / aspect)) : L.rows;
     // ゴールがわの はしは いきどまりを のこす（みちの おわりに ゴールを おくため）
     const onGoalEdge = (x, y) => (portrait ? y === H - 1 : x === W - 1);
-    const m = generate(W, H, L.braid, onGoalEdge);
     const trip = pick(TRIPS);
 
-    // スタートは ひだりうえ。ゴールは はんたいがわの はしの「みちの おわり（いきどまり）」の うち、いちばん とおい マス
-    const dist = distances(m, W, H, 0, 0);
-    let gx = -1, gy = -1;
-    for (const deadEndOnly of [true, false]) {
-      for (let y = 0; y < H; y++) {
-        for (let x = 0; x < W; x++) {
-          if (!onGoalEdge(x, y) || (deadEndOnly && m.degree(x, y) !== 1)) continue;
-          if (gx < 0 || dist[y][x] > dist[gy][gx]) { gx = x; gy = y; }
+    // めいろを いくつか つくって「せいかいの みちが ながく、とちゅうの わかれみちが おおい」ものを えらぶ
+    const build = () => {
+      const m = generate(W, H, L.braid, onGoalEdge, L.branch);
+      // スタートは ひだりうえ。ゴールは はんたいがわの はしの「みちの おわり（いきどまり）」の うち、いちばん とおい マス
+      const dist = distances(m, W, H, 0, 0);
+      let gx = -1, gy = -1;
+      for (const deadEndOnly of [true, false]) {
+        for (let y = 0; y < H; y++) {
+          for (let x = 0; x < W; x++) {
+            if (!onGoalEdge(x, y) || (deadEndOnly && m.degree(x, y) !== 1)) continue;
+            if (gx < 0 || dist[y][x] > dist[gy][gx]) { gx = x; gy = y; }
+          }
         }
+        if (gx >= 0) break;
       }
-      if (gx >= 0) break;
-    }
+      const path = [[gx, gy]];
+      while (path[0][0] || path[0][1]) {
+        const [x, y] = path[0];
+        const back = DIRS.map(([dx, dy]) => [x + dx, y + dy])
+          .find(([nx, ny]) => m.inside(nx, ny) && m.open(x, y, nx, ny) && dist[ny][nx] === dist[y][x] - 1);
+        path.unshift(back);
+      }
+      const forks = path.filter(([x, y]) => m.degree(x, y) >= 3).length;
+      return { m, dist, gx, gy, path, score: path.length + forks * 3 };
+    };
+    const tries = level >= 5 ? 15 : 1;
+    let pickd = build();
+    for (let t = 1; t < tries; t++) { const c = build(); if (c.score > pickd.score) pickd = c; }
+    const { m, dist, gx, gy, path } = pickd;
     let best = dist[gy][gx];
 
-    // ほしは ゴールまでの みちの うえに ならべる（もどらずに ひろえる）
-    const path = [[gx, gy]];
-    while (path[0][0] || path[0][1]) {
-      const [x, y] = path[0];
-      const back = DIRS.map(([dx, dy]) => [x + dx, y + dy])
-        .find(([nx, ny]) => m.inside(nx, ny) && m.open(x, y, nx, ny) && dist[ny][nx] === dist[y][x] - 1);
-      path.unshift(back);
-    }
     // かぎ: ごーるまでの みちから いちばん はなれた いきどまり
     let key = null;
     if (L.key) {
@@ -150,7 +163,7 @@ export default {
     }
 
     return {
-      key: `${L.cols}x${L.rows}`,
+      key: `maze${level}`,
       render(root, api) {
         const S = 100; // 1マスの おおきさ（SVG の たんい）
         const c = (v) => v * S + S / 2;
