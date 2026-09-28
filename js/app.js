@@ -60,17 +60,62 @@ document.addEventListener('visibilitychange', () => {
   if (!document.hidden && me && app.classList.contains('screen-play') && roundStart === null) roundStart = Date.now();
 });
 
-// ---------- こどもを えらぶ ----------
+// ---------- アイコン・サムネイル ----------
+// こどもの アイコンは ろぼの え（えもじ と ろぼを むすぶ）
+const ICON_ROBOT = { '🚗': 'car', '🚒': 'fire', '🚓': 'police', '🚑': 'ambulance', '🚌': 'bus', '🚜': 'tractor', '🚄': 'shinkansen', '✈️': 'plane', '🚀': 'rocket' };
+const avatar = (p) => (ICON_ROBOT[p.icon]
+  ? `<img src="img/robots/${ICON_ROBOT[p.icon]}.png" alt="" draggable="false">`
+  : `<span>${p.icon}</span>`);
+
+// ゲームの なかま わけ（ひだりの たぶ と かーどの わくの いろ）
+const GROUPS = [
+  { id: 'all', name: 'ぜんぶ', icon: '⭐', color: '#ff922b' },
+  { id: 'moji', name: 'もじ', icon: 'あ', color: '#f06595', games: ['hira', 'words', 'reading'] },
+  { id: 'kazu', name: 'かず', icon: '123', color: '#339af0', games: ['count', 'line'] },
+  { id: 'think', name: 'かんがえる', icon: '🧩', color: '#51cf66', games: ['maze', 'puzzle', 'what', 'pattern', 'odd'] },
+];
+const groupOf = (id) => GROUPS.find((g) => g.games?.includes(id)) || GROUPS[0];
+
+// さむねいる: ずかんの え や ろぼの え を くみあわせて つくる
+const Z = (n, cls = '') => `<img class="${cls}" src="img/zukan/${encodeURIComponent(n)}.png" alt="" draggable="false">`;
+const R = (n, cls = '') => `<img class="${cls}" src="img/robots/${n}.png" alt="" draggable="false">`;
+const THUMBS = {
+  hira: `<b class="t-kana">あ</b>${Z('あひる', 't-r')}`,
+  words: `<span class="t-tiles"><i>い</i><i>ぬ</i></span>${Z('いぬ', 't-r')}`,
+  reading: `<span class="t-lines"><i>ねこ は</i><i>ねむい。</i></span>${Z('ねこ', 't-r')}`,
+  count: `${Z('くるま', 't-a')}${Z('くるま', 't-b')}${Z('くるま', 't-c')}<b class="t-num">3</b>`,
+  line: `<span class="t-line"><i></i></span><b class="t-ticks">0 1 2 3 4 5</b>${R('car', 't-ride')}`,
+  maze: `<span class="t-road"></span>${Z('くるま', 't-car')}<b class="t-flag">🏁</b>`,
+  puzzle: `<span class="t-jig">${R('fire')}</span>`,
+  what: `${Z('ぱんだ', 't-shadow')}<b class="t-q">？</b>`,
+  pattern: `<span class="t-row">${Z('りんご')}${Z('ばなな')}${Z('りんご')}<b>？</b></span>`,
+  odd: `<span class="t-row">${Z('いぬ')}${Z('ねこ')}${Z('りんご', 't-odd')}</span>`,
+};
+
+// ---------- たいとる（こどもを えらぶ） ----------
 function screenProfiles() {
   me = null;
   if (!data.profiles.length) return screenLock(screenParent);
   view(`
-    <h1 class="title">だれが あそぶ？</h1>
-    <div class="profiles">
-      ${data.profiles.map((p) => `
-        <button class="profile" data-id="${p.id}">
-          <span class="big">${p.icon}</span><span class="name">${esc(p.name)}</span>
-        </button>`).join('')}
+    <div class="sky" aria-hidden="true">
+      <span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span>
+      <span class="balloon b1"></span><span class="balloon b2"></span><span class="balloon b3"></span>
+      ${Z('ひこうき', 'plane-fly')}
+      ${Z('へりこぷたー', 'heli-fly')}
+    </div>
+    <div class="home">
+      <div class="logo-wrap">
+        <h1 class="logo">${[...'のりものろぼ'].map((c, i) => `<span style="--i:${i}">${c}</span>`).join('')}</h1>
+        <p class="logo-sub">がくしゅう らんど</p>
+        <div class="home-mascot">${art('img/mascot.png', '🤖')}</div>
+      </div>
+      <p class="who-q">だれが あそぶ？</p>
+      <div class="profiles">
+        ${data.profiles.map((p, i) => `
+          <button class="profile" data-id="${p.id}" style="--i:${i}">
+            <span class="ava">${avatar(p)}</span><span class="name">${esc(p.name)}</span>
+          </button>`).join('')}
+      </div>
     </div>
     <button class="gear" aria-label="おうちのひと">⚙️</button>`, 'screen-profiles');
   app.querySelectorAll('.profile').forEach((b) => {
@@ -85,29 +130,51 @@ function screenProfiles() {
 }
 
 // ---------- ゲームいちらん ----------
+let menuTab = 'all';
 function screenMenu() {
   if (timeUp(me)) return screenEnd();
-  const robotsGot = me.robots.length;
   const leftMs = allowedMs(me) - playedMs(me);
-  const soon = data.settings.limitMin > 0 && leftMs <= 3 * 60000;
+  const limited = data.settings.limitMin > 0;
+  const soon = limited && leftMs <= 3 * 60000;
+  const games = gamesFor(me);
+  const tabs = GROUPS.filter((g) => g.id === 'all' || games.some((x) => g.games.includes(x.id)));
+  if (!tabs.some((t) => t.id === menuTab)) menuTab = 'all';
+  const shown = menuTab === 'all' ? games : games.filter((g) => groupOf(g.id).id === menuTab);
   view(`
-    <header class="bar">
+    <header class="topbar">
       <button class="back sign" aria-label="もどる">◀</button>
-      <span class="who">${me.icon} <span class="txt">${esc(me.name)}</span></span>
-      <button class="stampbtn" aria-label="ずかん">⭐ ${me.stamps}　🤖 ${robotsGot}</button>
+      <button class="stampbtn chip" aria-label="ずかん">⭐ <b>${me.stamps}</b> <span class="txt">すたんぷ</span></button>
+      <button class="robotbtn chip" aria-label="ずかん">🤖 <b>${me.robots.length}</b> <span class="txt">ろぼ</span></button>
+      <span class="spacer"></span>
+      ${limited ? `<span class="chip time ${soon ? 'soon-chip' : ''}">⏰ <b>${Math.max(0, Math.ceil(leftMs / 60000))}</b><span class="txt">ふん</span></span>` : ''}
+      <span class="me-ava">${avatar(me)}</span>
     </header>
     ${soon ? '<div class="soon">⏰ <span class="txt">あと 1かいで おしまい だよ</span></div>' : ''}
-    <div class="games">
-      ${gamesFor(me).map((g) => `
-        <button class="game" data-id="${g.id}" style="--c:${g.color}">
-          <span class="gtitle txt">${g.title}</span>
-          <span class="thumb">${g.icon}</span>
-          <span class="pill">▶ <span class="txt">あそぶ</span></span>
-        </button>`).join('')}
+    <div class="menu-body">
+      <nav class="tabs">
+        ${tabs.map((t) => `<button class="tab ${t.id === menuTab ? 'on' : ''}" data-t="${t.id}" style="--g:${t.color}">
+          <b>${t.icon}</b><span class="txt">${t.name}</span></button>`).join('')}
+      </nav>
+      <div class="games">
+        ${shown.map((g, i) => {
+          const grp = groupOf(g.id);
+          const lv = (me.levels[g.id] ?? g.startLevel(me.age)) + 1;
+          return `
+          <button class="game" data-id="${g.id}" style="--g:${grp.color};--c:${g.color};--i:${i}">
+            <span class="thumb th-${g.id}">${THUMBS[g.id] || g.icon}</span>
+            <span class="gtitle txt">${g.title}</span>
+            <span class="lv">${'★'.repeat(Math.min(lv, 6))}</span>
+          </button>`;
+        }).join('')}
+      </div>
     </div>`, 'screen-menu');
   if (soon) speak('あと 1かいで おしまい だよ');
   app.querySelector('.back').onclick = screenProfiles;
   app.querySelector('.stampbtn').onclick = screenZukan;
+  app.querySelector('.robotbtn').onclick = screenZukan;
+  app.querySelectorAll('.tab').forEach((t) => {
+    t.onclick = () => { sfx.tap(); menuTab = t.dataset.t; speak(GROUPS.find((g) => g.id === menuTab).name); screenMenu(); };
+  });
   app.querySelectorAll('.game').forEach((b) => {
     b.onclick = () => { sfx.tap(); screenIntro(GAMES.find((g) => g.id === b.dataset.id)); };
   });
@@ -120,7 +187,7 @@ function screenIntro(game) {
     <div class="intro" style="--c:${game.color}">
       <div class="icard">
         <h2 class="txt">${game.title}</h2>
-        <div class="thumb big-thumb">${game.icon}</div>
+        <div class="thumb big-thumb th-${game.id}" style="--g:${groupOf(game.id).color}">${THUMBS[game.id] || game.icon}</div>
         ${game.levelChoices ? `<div class="lvls">${game.levelChoices.map((L, i) => `
           <button class="lvl" data-i="${i}" style="--c:${L.color}">
             <b>${L.name}</b><small>${L.note}</small>
