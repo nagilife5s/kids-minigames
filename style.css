@@ -306,3 +306,5 @@ body { background: #8fd43c url("img/bg.svg") center bottom / cover no-repeat fix
 .choice.wd-tile.small { display: grid; place-items: end center; }
 .wd-tile.used { visibility: hidden; }
 .wd-slots.ok { background: none; animation: pop .5s; }
+.start, .pill, .again { white-space: nowrap; }
+@media (max-width: 700px) { .screen-intro .intro { padding-top: 72px; } }
