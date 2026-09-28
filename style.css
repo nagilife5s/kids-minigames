@@ -488,3 +488,12 @@ body { background: #8fd43c url("img/bg.svg") center bottom / cover no-repeat fix
 .slot-s.new { animation: stamp-in .7s cubic-bezier(.3,1.6,.5,1) both; animation-delay: .3s; }
 @keyframes stamp-in { 0% { transform: scale(2.4) rotate(-25deg); opacity: 0; } 60% { transform: scale(.9) rotate(4deg); opacity: 1; } 100% { transform: scale(1) rotate(0); } }
 .lv i { color: #dee2e6; font-style: normal; }
+
+/* めいろの かぎ */
+.maze .key { animation: bob 1s ease-in-out infinite; z-index: 1; filter: drop-shadow(0 0 6px #ffe066); }
+.maze .key.got { animation: grab .6s forwards; }
+.maze .goal { position: absolute; }
+.maze .goal .lock { position: absolute; right: 2%; bottom: 2%; font-size: .55em; transition: transform .4s, opacity .4s; }
+.maze .goal:not(.locked) .lock { transform: scale(1.8) rotate(20deg); opacity: 0; }
+.maze .goal.locked { filter: grayscale(.4); }
+.maze .goal.shake { animation: shake .4s; }

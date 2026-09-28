@@ -448,7 +448,8 @@ function screenParent(back) {
             <table>
               <tr><th></th><th>さいきん7日の せいかいりつ</th><th>にがて（せいかい/かいすう）</th><th>レベル</th></tr>
               ${GAMES.map((g) => `<tr><td>${g.icon}</td><td>${accuracy(p, g.id)}</td><td class="weak">${weakest(p, g.id)}</td>
-                <td>${(p.levels[g.id] ?? g.startLevel(p.age)) + 1} / ${g.levels}</td></tr>`).join('')}
+                <td><select data-lv="${p.id}|${g.id}">${Array.from({ length: g.levels }, (_, k) =>
+                  `<option value="${k}" ${k === (p.levels[g.id] ?? g.startLevel(p.age)) ? 'selected' : ''}>${k + 1}</option>`).join('')}</select> / ${g.levels}</td></tr>`).join('')}
             </table>
             <p class="muted">きょう ${Math.round(playedMs(p) / 60000)}ふん あそんだ　⭐${p.stamps}　🤖${p.robots.length}
               ${timeUp(p) ? `<button data-extend="${p.id}">＋15ふん えんちょう</button>` : ''}</p>
@@ -486,6 +487,15 @@ function screenParent(back) {
   };
   app.querySelectorAll('[data-age]').forEach((s) => {
     s.onchange = () => { data.profiles.find((p) => p.id === s.dataset.age).age = Number(s.value); persist(); };
+  });
+  app.querySelectorAll('[data-lv]').forEach((sel) => {
+    sel.onchange = () => {
+      const [pid, gid] = sel.dataset.lv.split('|');
+      const p = data.profiles.find((x) => x.id === pid);
+      p.levels[gid] = Number(sel.value);
+      if (p.recent) p.recent[gid] = [];
+      persist();
+    };
   });
   app.querySelectorAll('[data-del]').forEach((b) => {
     b.onclick = () => {

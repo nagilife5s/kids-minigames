@@ -22,6 +22,11 @@ const LEVELS = [
   { cols: 9, rows: 6, braid: 0.05, stars: 3 },
   { cols: 11, rows: 7, braid: 0, stars: 3 },
   { cols: 13, rows: 8, braid: 0, stars: 3 },
+  // ここから かぎ 🔑: みちから はずれた いきどまりの かぎを とらないと ごーるに はいれない
+  { cols: 13, rows: 8, braid: 0, stars: 3, key: true },
+  { cols: 15, rows: 9, braid: 0, stars: 3, key: true },
+  { cols: 17, rows: 10, braid: 0, stars: 3, key: true },
+  { cols: 19, rows: 11, braid: 0, stars: 3, key: true },
 ];
 
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
@@ -80,7 +85,7 @@ export default {
   color: '#ffc078',
   howto: 'のりものを ゆびで なぞって、みちを とおって いきさきまで つれていってね。ほしも ひろえるかな？',
   levels: LEVELS.length,
-  startLevel: (age) => (age <= 3 ? 0 : age === 4 ? 1 : age === 5 ? 2 : age === 6 ? 3 : 4),
+  startLevel: (age) => (age <= 3 ? 0 : age === 4 ? 2 : age === 5 ? 4 : age === 6 ? 6 : 7),
 
   question(level) {
     const L = LEVELS[level];
@@ -105,7 +110,7 @@ export default {
       }
       if (gx >= 0) break;
     }
-    const best = dist[gy][gx];
+    let best = dist[gy][gx];
 
     // ほしは ゴールまでの みちの うえに ならべる（もどらずに ひろえる）
     const path = [[gx, gy]];
@@ -114,6 +119,29 @@ export default {
       const back = DIRS.map(([dx, dy]) => [x + dx, y + dy])
         .find(([nx, ny]) => m.inside(nx, ny) && m.open(x, y, nx, ny) && dist[ny][nx] === dist[y][x] - 1);
       path.unshift(back);
+    }
+    // かぎ: ごーるまでの みちから いちばん はなれた いきどまり
+    let key = null;
+    if (L.key) {
+      const onPath = new Set(path.map(([x, y]) => `${x},${y}`));
+      const far = Array.from({ length: H }, () => Array(W).fill(-1));
+      const q = path.map(([x, y]) => { far[y][x] = 0; return [x, y]; });
+      while (q.length) {
+        const [x, y] = q.shift();
+        for (const [dx, dy] of DIRS) {
+          const nx = x + dx, ny = y + dy;
+          if (!m.inside(nx, ny) || far[ny][nx] >= 0 || !m.open(x, y, nx, ny)) continue;
+          far[ny][nx] = far[y][x] + 1;
+          q.push([nx, ny]);
+        }
+      }
+      for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+          if (onPath.has(`${x},${y}`) || m.degree(x, y) !== 1) continue;
+          if (!key || far[y][x] > far[key[1]][key[0]]) key = [x, y];
+        }
+      }
+      if (key) best = dist[key[1]][key[0]] + distances(m, W, H, key[0], key[1])[gy][gx];
     }
     const stars = [];
     for (let i = 1; i <= L.stars; i++) {
@@ -147,11 +175,14 @@ export default {
               ${trees.join('')}
               <circle cx="${c(0)}" cy="${c(0)}" r="30" class="start"/>
             </svg>
-            <div class="spot goal" style="--x:${gx};--y:${gy}">${trip.goal}</div>
+            <div class="spot goal ${key ? 'locked' : ''}" style="--x:${gx};--y:${gy}">${trip.goal}${key ? '<span class="lock">🔒</span>' : ''}</div>
+            ${key ? `<div class="spot key" style="--x:${key[0]};--y:${key[1]}">🔑</div>` : ''}
             ${stars.map((s) => { const [x, y] = s.split(','); return `<div class="spot star" data-s="${s}" style="--x:${x};--y:${y}">⭐</div>`; }).join('')}
             <div class="spot rider" style="--x:0;--y:0">${pic(trip.name, trip.rider)}</div>
           </div>`;
-        const ask = () => api.speak(`${trip.name}を ${trip.place}まで つれていってね`);
+        const ask = () => api.speak(key
+          ? `${trip.place}には かぎが かかって いるよ。 さきに かぎを とってから いこう`
+          : `${trip.name}を ${trip.place}まで つれていってね`);
         root.querySelector('.replay').onclick = () => { api.tap(); ask(); };
 
         const board = root.querySelector('.maze');
@@ -159,7 +190,7 @@ export default {
         const trailEl = board.querySelector('.trail');
         const countEl = root.querySelector('.star-count b');
         const route = [[0, 0]]; // いま とおって いる みち（もどると けす）
-        let moves = 0, got = 0, finished = false;
+        let moves = 0, got = 0, finished = false, hasKey = !key, warned = false;
 
         const draw = () => {
           const [x, y] = route[route.length - 1];
@@ -181,6 +212,18 @@ export default {
             star.classList.add('got');
             countEl.textContent = ++got;
             api.speak('ほし みっけ！', { rate: 1.1 });
+          }
+          if (!hasKey && nx === key[0] && ny === key[1]) {
+            hasKey = true;
+            board.querySelector('.key').classList.add('got');
+            board.querySelector('.goal').classList.remove('locked');
+            api.speak('かぎを とった！ ごーるの かぎが あいたよ');
+          }
+          if (nx === gx && ny === gy && !hasKey) {
+            if (!warned) { warned = true; api.speak('かぎが かかってるよ。 かぎを さがそう'); }
+            board.querySelector('.goal').classList.remove('shake'); void board.offsetWidth;
+            board.querySelector('.goal').classList.add('shake');
+            return true;
           }
           if (nx === gx && ny === gy) {
             finished = true;
