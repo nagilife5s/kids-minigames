@@ -1,10 +1,10 @@
 // オフライン用の保存。ファイルを増やしたら FILES に足して VERSION を上げる
-const VERSION = 'v13';
+const VERSION = 'v14';
 const FILES = [
   './', 'index.html', 'style.css', 'manifest.webmanifest',
   'js/app.js', 'js/store.js', 'js/sound.js', 'js/data.js',
   'js/games/hiragana.js', 'js/games/count.js', 'js/games/numberline.js',
-  'js/games/maze.js', 'js/games/pattern.js', 'js/games/oddone.js', 'js/games/puzzle.js', 'js/games/words.js',
+  'js/games/maze.js', 'js/games/pattern.js', 'js/games/oddone.js', 'js/games/puzzle.js', 'js/games/words.js', 'js/games/reading.js',
   'img/bg.svg',
   'img/mascot.png', 'img/robots/car.png', 'img/robots/fire.png', 'img/robots/police.png', 'img/robots/ambulance.png', 'img/robots/bus.png', 'img/robots/tractor.png', 'img/robots/truck.png', 'img/robots/train.png', 'img/robots/shinkansen.png', 'img/robots/plane.png', 'img/robots/heli.png', 'img/robots/ship.png', 'img/robots/rocket.png', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',
 ];

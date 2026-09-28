@@ -9,10 +9,11 @@ import pattern from './games/pattern.js';
 import oddone from './games/oddone.js';
 import puzzle from './games/puzzle.js';
 import words from './games/words.js';
+import reading from './games/reading.js';
 
-const GAMES = [hiragana, words, count, numberline, maze, puzzle, pattern, oddone];
+const GAMES = [hiragana, words, reading, count, numberline, maze, puzzle, pattern, oddone];
 // 3さいには 文字や すうじの せんが いる ゲームは 出さない
-const MIN_AGE = { hira: 4, words: 4, line: 4 };
+const MIN_AGE = { hira: 4, words: 4, reading: 4, line: 4 };
 const gamesFor = (p) => GAMES.filter((g) => p.age >= (MIN_AGE[g.id] || 0));
 const pickOne = (a) => a[Math.floor(Math.random() * a.length)];
 
@@ -119,7 +120,11 @@ function screenIntro(game) {
       <div class="icard">
         <h2 class="txt">${game.title}</h2>
         <div class="thumb big-thumb">${game.icon}</div>
-        <button class="start">▶ <span class="txt">はじめる</span></button>
+        ${game.levelChoices ? `<div class="lvls">${game.levelChoices.map((L, i) => `
+          <button class="lvl" data-i="${i}" style="--c:${L.color}">
+            <b>${L.name}</b><small>${L.note}</small>
+            <span class="lvl-prog">⭕ ${game.progress(me.stats[game.id] || {}, i)} / ${L.texts.length}</span>
+          </button>`).join('')}</div>` : '<button class="start">▶ <span class="txt">はじめる</span></button>'}
       </div>
       <p class="howto txt">${game.howto}</p>
       ${mascot()}
@@ -128,11 +133,15 @@ function screenIntro(game) {
   speak(me.seen[game.id] ? game.title : `${game.title}。 ${game.howto}`);
   me.seen[game.id] = true;
   app.querySelector('.back').onclick = () => { speechSynthesis.cancel(); screenMenu(); };
-  app.querySelector('.start').onclick = () => { sfx.tap(); playRound(game); };
+  app.querySelector('.start')?.addEventListener('click', () => { sfx.tap(); playRound(game); });
+  app.querySelectorAll('.lvl').forEach((b) => {
+    b.onclick = () => { sfx.tap(); me.levels[game.id] = Number(b.dataset.i); playRound(game); };
+  });
 }
 
 // ---------- 1かい（5もん）あそぶ ----------
 async function playRound(game) {
+  const N = game.perRound || QUESTIONS_PER_ROUND;
   roundStart = Date.now();
   let level = me.levels[game.id] ?? game.startLevel(me.age);
   const stats = (me.stats[game.id] ||= {});
@@ -142,12 +151,12 @@ async function playRound(game) {
   let alive = true; // ラウンドを ぬけたら false。のこった 読み上げや うごきを とめる
   const never = new Promise(() => {});
 
-  for (let i = 0; i < QUESTIONS_PER_ROUND && !quit; i++) {
+  for (let i = 0; i < N && !quit; i++) {
     const q = game.question(level, stats);
     view(`
       <header class="bar">
         <button class="back sign quit" aria-label="やめる">✕</button>
-        <div class="dots">${Array.from({ length: QUESTIONS_PER_ROUND }, (_, k) =>
+        <div class="dots">${Array.from({ length: N }, (_, k) =>
           `<span class="dot ${k < i ? 'done' : k === i ? 'now' : ''}"></span>`).join('')}</div>
         <span></span>
       </header>
@@ -187,15 +196,17 @@ async function playRound(game) {
   if (quit) { persist(); return screenMenu(); }
 
   // 直近10もんの 正解率で 難しさを 上げ下げ（5もん だけだと まぐれで ゆれるため）
-  if (recent.length >= 10) {
+  if (game.manualLevel) {
+    // れべるは こどもが えらぶ ので かえない
+  } else if (recent.length >= 10) {
     const rate = recent.reduce((a, b) => a + b, 0) / recent.length;
     if (rate >= 0.8 && level < game.levels - 1) { level++; recent.length = 0; }
     else if (rate <= 0.4 && level > 0) { level--; recent.length = 0; }
-  } else if (okCount === 0 && level > 0) {
+  } else if (!game.manualLevel && okCount === 0 && level > 0) {
     level--; recent.length = 0; // まったく できない ときは すぐ さげる
   }
   me.levels[game.id] = level;
-  me.history.push({ game: game.id, at: Date.now(), ok: okCount, total: QUESTIONS_PER_ROUND });
+  me.history.push({ game: game.id, at: Date.now(), ok: okCount, total: N });
   if (me.history.length > 300) me.history.splice(0, me.history.length - 300);
 
   // ごほうび（失敗しても スタンプは もらえる）。ろぼが ぜんぶ そろったら めだる
@@ -209,7 +220,7 @@ async function playRound(game) {
   }
   (me.todayStamps ||= {})[today()] = ((me.todayStamps || {})[today()] || 0) + 1;
   persist();
-  screenReward(game, robot, medal, okCount);
+  screenReward(game, robot, medal, okCount, N);
 }
 
 // まるの ときは おおきな ⭕ と きらきら、ちがう ときは やさしく「おしい！」
@@ -227,12 +238,12 @@ function lockChoices() {
   app.querySelectorAll('.choice').forEach((b) => { b.disabled = true; });
 }
 
-const PRAISE_ALL = ['5もん ぜんぶ できたね！', 'すごい！ ぜんもん せいかい！', 'かんぺき！'];
+const PRAISE_ALL = ['ぜんぶ できたね！', 'すごい！ ぜんもん せいかい！', 'かんぺき！'];
 const PRAISE = ['さいごまで がんばったね！', 'よく かんがえたね！', 'いっぱい ちょうせん したね！', 'どんどん じょうずに なってるよ！'];
 
-function screenReward(game, robot, medal, okCount) {
+function screenReward(game, robot, medal, okCount, total = QUESTIONS_PER_ROUND) {
   const left = STAMPS_PER_ROBOT - (me.stamps % STAMPS_PER_ROBOT);
-  const praise = pickOne(okCount === QUESTIONS_PER_ROUND ? PRAISE_ALL : PRAISE);
+  const praise = pickOne(okCount === total ? PRAISE_ALL : PRAISE);
   view(`
     <div class="reward">
       <div class="stamp pop">⭐</div>

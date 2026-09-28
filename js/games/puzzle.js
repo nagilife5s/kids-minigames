@@ -1,5 +1,5 @@
 // ぱずる: かたちはめ（●■▲ を おなじ かたちの あなへ）→ のりものの じぐそー
-import { VEHICLES } from '../data.js';
+import { ROBOTS } from '../data.js';
 
 const SHAPES = [
   { id: 'circle', name: 'まる', color: '#ff6b6b' },
@@ -38,7 +38,9 @@ export default {
 
   question(level) {
     const L = LEVELS[level];
-    const pic = VEHICLES[Math.floor(Math.random() * VEHICLES.length)];
+    // じぐそーの え は ずかんの ろぼ（がぞう）
+    const robot = ROBOTS[Math.floor(Math.random() * ROBOTS.length)];
+    const pic = `<img src="${robot.img}" alt="" draggable="false">`;
     const shapes = shuffle([...SHAPES]).slice(0, L.n || 0);
 
     return {
