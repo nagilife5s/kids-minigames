@@ -1,14 +1,10 @@
-// なかまはずれは どれ？
-const CATS = {
-  road: { name: 'みちを はしる のりもの', items: ['🚗', '🚌', '🚓', '🚑', '🚒', '🚚', '🚜'] },
-  sky: { name: 'そらを とぶ もの', items: ['✈️', '🚁', '🚀', '🎈', '🪂'] },
-  sea: { name: 'みずの うえを すすむ のりもの', items: ['🚢', '⛵', '🚤', '🛶', '⛴️'] },
-  fruit: { name: 'くだもの', items: ['🍎', '🍌', '🍇', '🍊', '🍑', '🍐'] },
-  veg: { name: 'やさい', items: ['🥕', '🥦', '🌽', '🥒', '🍆'] },
-  animal: { name: 'どうぶつ', items: ['🐶', '🐱', '🐰', '🐻', '🐼', '🦁', '🐘'] },
-};
+// なかまはずれは どれ？（ずかんの え）
+import { CATS, pic } from '../zukan.js';
+
+// はっきり ちがう なかま（やさしい もんだい用）
+const EASY = ['animal', 'fruit', 'veg', 'sea', 'bug', 'food', 'tool', 'road'];
 // にている なかま（むずかしい もんだい用）
-const NEAR = [['road', 'sky', 'sea'], ['fruit', 'veg']];
+const NEAR = [['fruit', 'veg'], ['sea', 'bug'], ['road', 'sky'], ['road', 'rail'], ['food', 'fruit'], ['animal', 'bird']];
 
 const LEVELS = [
   { n: 3, near: false },
@@ -25,6 +21,7 @@ const shuffle = (a) => {
   return a;
 };
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
+const nearOf = (a, b) => NEAR.some((g) => g.includes(a) && g.includes(b));
 
 export default {
   id: 'odd',
@@ -39,24 +36,24 @@ export default {
     const L = LEVELS[level];
     let main, odd;
     if (L.near) {
-      const g = pick(NEAR);
-      [main, odd] = shuffle([...g]);
+      // なかまの かずが たりる ほうを 「なかま」に する
+      const g = shuffle([...pick(NEAR)]);
+      [main, odd] = CATS[g[0]].items.length >= L.n - 1 ? g : [g[1], g[0]];
     } else {
-      const keys = Object.keys(CATS);
-      main = pick(keys);
-      const far = keys.filter((k) => k !== main && !NEAR.some((g) => g.includes(k) && g.includes(main)));
-      odd = pick(far);
+      main = pick(EASY);
+      odd = pick(EASY.filter((k) => k !== main && !nearOf(k, main)));
     }
-    const oddItem = pick(CATS[odd].items);
-    const items = shuffle([...shuffle([...CATS[main].items]).slice(0, L.n - 1), oddItem]);
+    const oddItem = pick(CATS[odd].items.filter((x) => !CATS[main].items.includes(x)));
+    const mates = shuffle(CATS[main].items.filter((x) => !CATS[odd].items.includes(x))).slice(0, L.n - 1);
+    const items = shuffle([...mates, oddItem]);
 
     return {
       key: `${main}/${odd}`,
       render(root, api) {
         root.innerHTML = `
           <button class="replay" aria-label="もういちど きく">🔊</button>
-          <div class="choices emo n${L.n}">
-            ${items.map((c) => `<button class="choice" data-c="${c}">${c}</button>`).join('')}
+          <div class="choices emo pics n${L.n}">
+            ${items.map((c) => `<button class="choice" data-c="${c}">${pic(c)}</button>`).join('')}
           </div>`;
         const ask = () => api.speak('なかまはずれは どれかな？');
         root.querySelector('.replay').onclick = () => { api.tap(); ask(); };
@@ -65,12 +62,12 @@ export default {
           b.onclick = async () => {
             if (b.dataset.c === oddItem) {
               api.correct(b);
-              await api.speak(`あたり！ ほかは みんな ${CATS[main].name} だね`);
+              await api.speak(`あたり！ ${oddItem} だけ ちがうね。 ほかは みんな ${CATS[main].name} だね`);
               api.done(first);
             } else {
               first = false;
               api.wrong(b);
-              await api.speak('それは なかまだよ');
+              await api.speak(`${b.dataset.c} は なかまだよ`);
             }
           };
         });

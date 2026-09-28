@@ -10,8 +10,9 @@ import oddone from './games/oddone.js';
 import puzzle from './games/puzzle.js';
 import words from './games/words.js';
 import reading from './games/reading.js';
+import whatisit from './games/whatisit.js';
 
-const GAMES = [hiragana, words, reading, count, numberline, maze, puzzle, pattern, oddone];
+const GAMES = [hiragana, words, reading, count, numberline, maze, puzzle, whatisit, pattern, oddone];
 // 3さいには 文字や すうじの せんが いる ゲームは 出さない
 const MIN_AGE = { hira: 4, words: 4, reading: 4, line: 4 };
 const gamesFor = (p) => GAMES.filter((g) => p.age >= (MIN_AGE[g.id] || 0));
