@@ -1,12 +1,14 @@
 // つぎは どれ？（ならびかたの きまりを みつける）
-import { VEHICLES } from '../data.js';
+import { pic } from '../zukan.js';
 
+// いろの まる は CSS で かく（'#…'）。それ いがいは ずかんの え
 const SETS = [
-  ['🔴', '🔵', '🟡', '🟢', '🟣'],
-  ['🍎', '🍌', '🍇', '🍓', '🍊'],
-  VEHICLES,
-  ['⭐', '❤️', '🔷', '🌙', '🍀'],
+  ['#ff6b6b', '#339af0', '#fcc419', '#51cf66', '#845ef7'],
+  ['りんご', 'ばなな', 'ぶどう', 'すいか', 'みかん'],
+  ['くるま', 'ばす', 'しょうぼうしゃ', 'ぱとかー', 'とらくたー'],
+  ['いぬ', 'ねこ', 'うさぎ', 'ぱんだ', 'ぞう'],
 ];
+const show = (x) => (x[0] === '#' ? `<span class="cdot" style="--c:${x}"></span>` : pic(x));
 
 const LEVELS = [
   { types: ['AB'], n: 2 },
@@ -57,10 +59,10 @@ export default {
         root.innerHTML = `
           <button class="replay" aria-label="もういちど きく">🔊</button>
           <div class="seq ${shown > 8 ? 'long' : ''}">
-            ${seq.map((s) => `<span class="item">${s}</span>`).join('')}<span class="item q">？</span>
+            ${seq.map((s) => `<span class="item">${show(s)}</span>`).join('')}<span class="item q">？</span>
           </div>
           <div class="choices emo n${L.n}">
-            ${shuffle([...choices]).map((c) => `<button class="choice" data-c="${c}">${c}</button>`).join('')}
+            ${shuffle([...choices]).map((c) => `<button class="choice" data-c="${c}">${show(c)}</button>`).join('')}
           </div>`;
         const ask = () => api.speak('つぎは どれかな？');
         root.querySelector('.replay').onclick = () => { api.tap(); ask(); };
@@ -70,7 +72,7 @@ export default {
             if (b.dataset.c === answer) {
               api.correct(b);
               const q = root.querySelector('.item.q');
-              q.textContent = answer;
+              q.innerHTML = show(answer);
               q.classList.remove('q');
               q.classList.add('filled');
               await api.speak('あたり！');

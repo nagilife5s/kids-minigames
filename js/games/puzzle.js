@@ -44,7 +44,7 @@ export default {
     const shapes = shuffle([...SHAPES]).slice(0, L.n || 0);
 
     return {
-      key: L.kind === 'shape' ? `shape${L.n}` : `${L.cols}x${L.rows}`,
+      key: L.kind === 'shape' ? `shape${L.n}` : `${L.cols}x${L.rows}${L.guide ? '' : '-nog'}`,
       render(root, api) {
         // あな（slot）と ぴーす（piece）を つくる。data-id が おなじ ものが せいかい
         let slots, pieces, board;

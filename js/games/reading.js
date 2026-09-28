@@ -67,14 +67,14 @@ export const READING_LEVELS = [
 
 // まだ ⭕ に なって いない ぶんしょうを じゅんばんに だす
 function nextIndex(texts, stats, lvl, last) {
-  const done = (i) => (stats[`${lvl}-${i}`]?.ok || 0) > 0;
+  const done = (i) => !!stats[`${lvl}-${i}`]?.read;
   const i = texts.findIndex((_, k) => !done(k) && k !== last);
   if (i >= 0) return i;
   const all = texts.map((_, k) => k).filter((k) => k !== last);
   return all[Math.floor(Math.random() * all.length)];
 }
 
-let last = null;
+const last = {}; // れべるごとの まえの ぶんしょう
 
 export default {
   id: 'reading',
@@ -87,12 +87,12 @@ export default {
   perRound: 3,
   manualLevel: true, // れべるは こどもが えらぶ
   levelChoices: READING_LEVELS,
-  progress: (stats, lvl) => READING_LEVELS[lvl].texts.filter((_, i) => (stats[`${lvl}-${i}`]?.ok || 0) > 0).length,
+  progress: (stats, lvl) => READING_LEVELS[lvl].texts.filter((_, i) => !!stats[`${lvl}-${i}`]?.read).length,
 
   question(level, stats) {
     const L = READING_LEVELS[level];
-    const i = nextIndex(L.texts, stats, level, last);
-    last = i;
+    const i = nextIndex(L.texts, stats, level, last[level]);
+    last[level] = i;
     const [art, ...lines] = L.texts[i];
 
     return {
@@ -112,6 +112,9 @@ export default {
         const ng = root.querySelector('.rd-ng');
         let first = true;
         ok.onclick = async () => {
+          // いちど ⭕ に なったら「よめた」（❌の あとでも）
+          const s = (stats[`${level}-${i}`] ||= { n: 0, ok: 0 });
+          s.read = 1;
           api.correct(root.querySelector('.rd-text'));
           ok.disabled = ng.disabled = true;
           await api.speak(first ? 'じょうずに よめたね！' : 'さいごまで よめたね！');

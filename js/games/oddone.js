@@ -4,7 +4,7 @@ import { CATS, pic } from '../zukan.js';
 // はっきり ちがう なかま（やさしい もんだい用）
 const EASY = ['animal', 'fruit', 'veg', 'sea', 'bug', 'food', 'tool', 'road'];
 // にている なかま（むずかしい もんだい用）
-const NEAR = [['fruit', 'veg'], ['sea', 'bug'], ['road', 'sky'], ['road', 'rail'], ['food', 'fruit'], ['animal', 'bird']];
+const NEAR = [['fruit', 'veg'], ['sea', 'bug'], ['road', 'sky'], ['road', 'rail'], ['food', 'fruit']];
 
 const LEVELS = [
   { n: 3, near: false },

@@ -1,15 +1,16 @@
 // めいろで ごーる: のりものを ゆびで なぞって、みちを とおって いきさきへ
-// みちの とちゅうの ほしも ひろえる
+// みちの とちゅうの ほしも ひろえる。ごーるに つくと のりものが ろぼに へんしん
+import { pic } from '../zukan.js';
 
 // のりものと いきさき
 const TRIPS = [
-  { rider: '🚒', goal: '🔥', name: 'しょうぼうしゃ', place: 'かじの ばしょ' },
-  { rider: '🚑', goal: '🏥', name: 'きゅうきゅうしゃ', place: 'びょういん' },
-  { rider: '🚓', goal: '🏢', name: 'ぱとかー', place: 'けいさつしょ' },
-  { rider: '🚌', goal: '🚏', name: 'ばす', place: 'ばすてい' },
-  { rider: '🚚', goal: '📦', name: 'とらっく', place: 'にもつの ところ' },
-  { rider: '🚜', goal: '🌾', name: 'とらくたー', place: 'はたけ' },
-  { rider: '🚗', goal: '🏠', name: 'くるま', place: 'おうち' },
+  { rider: '🚒', goal: '🔥', name: 'しょうぼうしゃ', robot: 'fire', place: 'かじの ばしょ' },
+  { rider: '🚑', goal: '🏥', name: 'きゅうきゅうしゃ', robot: 'ambulance', place: 'びょういん' },
+  { rider: '🚓', goal: '🏢', name: 'ぱとかー', robot: 'police', place: 'けいさつしょ' },
+  { rider: '🚌', goal: '🚏', name: 'ばす', robot: 'bus', place: 'ばすてい' },
+  { rider: '🚚', goal: '📦', name: 'とらっく', robot: 'truck', place: 'にもつの ところ' },
+  { rider: '🚜', goal: '🌾', name: 'とらくたー', robot: 'tractor', place: 'はたけ' },
+  { rider: '🚗', goal: '🏠', name: 'くるま', robot: 'car', place: 'おうち' },
 ];
 
 // cols×rows（よこながの iPad むけ）。braid は いきどまりを へらす わりあい（ちいさい こ むけ）
@@ -148,7 +149,7 @@ export default {
             </svg>
             <div class="spot goal" style="--x:${gx};--y:${gy}">${trip.goal}</div>
             ${stars.map((s) => { const [x, y] = s.split(','); return `<div class="spot star" data-s="${s}" style="--x:${x};--y:${y}">⭐</div>`; }).join('')}
-            <div class="spot rider" style="--x:0;--y:0">${trip.rider}</div>
+            <div class="spot rider" style="--x:0;--y:0">${pic(trip.name, trip.rider)}</div>
           </div>`;
         const ask = () => api.speak(`${trip.name}を ${trip.place}まで つれていってね`);
         root.querySelector('.replay').onclick = () => { api.tap(); ask(); };
@@ -179,13 +180,16 @@ export default {
           if (star) {
             star.classList.add('got');
             countEl.textContent = ++got;
-            api.speak('ほし げっと！', { rate: 1.1 });
+            api.speak('ほし みっけ！', { rate: 1.1 });
           }
           if (nx === gx && ny === gy) {
             finished = true;
             api.correct(board.querySelector('.goal'));
+            // ろぼに へんしん！
+            riderEl.innerHTML = `<img class="zk" src="img/robots/${trip.robot}.png" alt="" draggable="false">`;
+            riderEl.classList.add('transform');
             const msg = got === stars.length ? 'ほしも ぜんぶ ひろえたね！' : got ? `ほしを ${got}こ ひろえたね` : '';
-            api.speak(`${trip.place}に ついた！ ${msg}`).then(() => api.done(moves <= Math.ceil(best * 1.6) + 2));
+            api.speak(`${trip.place}に ついた！ ろぼに へんしん！ ${msg}`).then(() => api.done(moves <= Math.ceil(best * 1.6) + 2));
           }
           return true;
         };

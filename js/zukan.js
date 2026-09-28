@@ -21,6 +21,6 @@ export const src = (name) => `img/zukan/${encodeURIComponent(name)}.png`;
 
 // え の html。ずかんに ない ものは えもじ など（alt）を そのまま だす
 export const pic = (name, alt = '', cls = '') =>
-  has(name) ? `<img class="zk ${cls}" src="${src(name)}" alt="${name}" draggable="false">` : `<span class="zk-emo ${cls}">${alt || name}</span>`;
+  has(name) ? `<img class="zk ${cls}" src="${src(name)}" alt="${name}" draggable="false" onerror="this.outerHTML='<span class=&quot;zk-emo&quot;>${alt || name}</span>'">` : `<span class="zk-emo ${cls}">${alt || name}</span>`;
 
 export const catOf = (name) => Object.keys(CATS).find((k) => CATS[k].items.includes(name));

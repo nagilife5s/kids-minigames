@@ -163,7 +163,7 @@ function screenMenu() {
           <button class="game" data-id="${g.id}" style="--g:${grp.color};--c:${g.color};--i:${i}">
             <span class="thumb th-${g.id}">${THUMBS[g.id] || g.icon}</span>
             <span class="gtitle txt">${g.title}</span>
-            <span class="lv">${'★'.repeat(Math.min(lv, 6))}</span>
+            <span class="lv">${'★'.repeat(Math.min(lv, g.levels))}<i>${'☆'.repeat(Math.max(0, g.levels - lv))}</i></span>
           </button>`;
         }).join('')}
       </div>
@@ -211,7 +211,7 @@ function screenIntro(game) {
 async function playRound(game) {
   const N = game.perRound || QUESTIONS_PER_ROUND;
   roundStart = Date.now();
-  let level = me.levels[game.id] ?? game.startLevel(me.age);
+  let level = Math.max(0, Math.min(me.levels[game.id] ?? game.startLevel(me.age), game.levels - 1));
   const stats = (me.stats[game.id] ||= {});
   const recent = ((me.recent ||= {})[game.id] ||= []);
   let okCount = 0;
@@ -248,7 +248,7 @@ async function playRound(game) {
         noText: noText(),
         correct(el) { sfx.ok(); el.classList.add('ok'); lockChoices(); showMark(true); },
         wrong(el) { sfx.ng(); el.classList.add('ng'); el.disabled = true; showMark(false); },
-        done: (ok) => { if (finished || !alive) return; finished = true; setTimeout(() => resolve(ok), 500); },
+        done: (ok) => { if (finished || !alive) return; finished = true; setTimeout(() => resolve(ok), 300); },
       });
     });
     if (firstOk === null) break;
@@ -268,7 +268,8 @@ async function playRound(game) {
     // れべるは こどもが えらぶ ので かえない
   } else if (recent.length >= 10) {
     const rate = recent.reduce((a, b) => a + b, 0) / recent.length;
-    if (rate >= 0.8 && level < game.levels - 1) { level++; recent.length = 0; }
+    const top = Math.min(game.levels - 1, game.maxLevel?.(me.age) ?? Infinity);
+    if (rate >= 0.8 && level < top) { level++; recent.length = 0; }
     else if (rate <= 0.4 && level > 0) { level--; recent.length = 0; }
   } else if (!game.manualLevel && okCount === 0 && level > 0) {
     level--; recent.length = 0; // まったく できない ときは すぐ さげる
@@ -314,10 +315,13 @@ function screenReward(game, robot, medal, okCount, total = QUESTIONS_PER_ROUND) 
   const praise = pickOne(okCount === total ? PRAISE_ALL : PRAISE);
   view(`
     <div class="reward">
-      <div class="stamp pop">⭐</div>
+      <div class="stamp-card">${Array.from({ length: STAMPS_PER_ROBOT }, (_, k) => {
+        const n = me.stamps % STAMPS_PER_ROBOT || STAMPS_PER_ROBOT;
+        return `<span class="slot-s ${k < n - 1 ? 'on' : k === n - 1 ? 'on new' : ''}">⭐</span>`;
+      }).join('')}</div>
       <h2 class="txt">すたんぷ げっと！</h2>
       ${robot ? `
-        <div class="newrobot pop">${art(robot.img, robot.emoji, 'robot-art')}</div>
+        <div class="newrobot">${art(robot.img, robot.emoji, 'robot-art reveal')}</div>
         <p class="txt">あたらしい ろぼ 「${robot.name}」が なかまに なったよ！</p>` : `
         <p class="txt">${medal ? '🏅 きらきら めだる げっと！' : `あと ${left}こで あたらしい ろぼが くるよ`}</p>`}
       <div class="row">
@@ -343,7 +347,7 @@ function screenZukan() {
       ${ROBOTS.map((r) => {
         const got = me.robots.includes(r.id);
         return `<button class="card ${got ? 'got' : ''}" data-id="${r.id}">
-          ${got ? art(r.img, r.emoji, 'robot-art') : '<span class="big">❓</span>'}
+          ${art(r.img, r.emoji, 'robot-art' + (got ? '' : ' locked'))}
           <span class="txt">${got ? r.name : '？？？'}</span></button>`;
       }).join('')}
     </div>`, 'screen-zukan');

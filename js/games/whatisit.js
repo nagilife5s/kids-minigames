@@ -34,7 +34,8 @@ export default {
   question(level, stats) {
     const L = LEVELS[level];
     let target;
-    do target = pick(ALL); while (target === last);
+    const cands = L.same ? ALL.filter((x) => CATS[catOf(x)].items.length >= 4) : ALL;
+    do target = pick(cands); while (target === last);
     last = target;
     // むずかしい ときは おなじ なかまから まぎらわしい ものを えらぶ
     const pool = L.same ? CATS[catOf(target)].items : ALL;

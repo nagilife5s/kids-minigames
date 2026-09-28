@@ -1,7 +1,8 @@
 // すうじの せん（数直線）
 // locate: いわれた数の ばしょを タッチ ／ blank: ？の数を えらぶ
 // add: a から b すすむと どこ？ ／ compare: どっちが おおきい？
-import { VEHICLES } from '../data.js';
+import { ROAD_PICS } from '../data.js';
+import { pic as zpic } from '../zukan.js';
 
 const LEVELS = [
   { max: 5, labels: 'all', modes: ['locate'] },
@@ -24,11 +25,11 @@ function makeProblem(L) {
   const mode = pick(L.modes);
   if (mode === 'locate') {
     const v = rand(1, L.max);
-    return { mode, key: String(v), answer: v, say: `${v} は どこかな？` };
+    return { mode, key: `${v}/${L.max}`, answer: v, say: `${v} は どこかな？` };
   }
   if (mode === 'blank') {
     const v = rand(1, L.max - 1);
-    return { mode, key: `?${v}`, answer: v, start: v, say: 'はてなの ところは いくつかな？' };
+    return { mode, key: `?${v}/${L.max}`, answer: v, start: v, say: 'はてなの ところは いくつかな？' };
   }
   if (mode === 'add') {
     const b = rand(1, Math.min(5, L.max - 1));
@@ -57,7 +58,7 @@ export default {
     let p;
     do p = makeProblem(L); while (p.key === lastKey);
     lastKey = p.key;
-    const rider = pick(VEHICLES);
+    const rider = zpic(pick(ROAD_PICS));
     const n = L.max + 1;
 
     return {

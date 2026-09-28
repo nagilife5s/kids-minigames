@@ -1,5 +1,6 @@
 // かず「のりものを かぞえて タッチ」
-import { VEHICLES } from '../data.js';
+import { ROAD_PICS } from '../data.js';
+import { pic } from '../zukan.js';
 
 const LEVELS = [
   { min: 1, max: 3, n: 2 },
@@ -21,6 +22,7 @@ export default {
   color: '#74c0fc',
   howto: 'のりものを タッチして かぞえてね',
   levels: LEVELS.length,
+  maxLevel: (age) => (age <= 3 ? 2 : LEVELS.length - 1), // 3さいは 10まで
   startLevel: (age) => (age <= 3 ? 1 : age <= 5 ? 2 : age === 6 ? 3 : 4),
 
   question(level) {
@@ -28,7 +30,7 @@ export default {
     let ans;
     do ans = rand(L.min, L.max); while (ans === last && L.max > L.min);
     last = ans;
-    const icon = VEHICLES[rand(0, VEHICLES.length - 1)];
+    const icon = pic(ROAD_PICS[rand(0, ROAD_PICS.length - 1)]);
 
     // 近い数をまぎらわしい選択肢にする
     const choices = new Set([ans]);
@@ -70,7 +72,7 @@ export default {
           b.onclick = async () => {
             if (Number(b.dataset.c) === ans) {
               api.correct(b);
-              await api.speak(`${ans}！`);
+              await api.speak(`${ans}だい！`);
               api.done(first);
             } else {
               first = false;
